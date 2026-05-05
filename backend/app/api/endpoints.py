@@ -26,20 +26,6 @@ async def list_users():
     # Retourne tous les utilisateurs
     return await User.all()
 
-# Route POST pour créer un employé
-@router.post("/employees/", response_model=EmployeeResponse)
-async def create_employee(emp: EmployeeCreate):
-    # Création de l'employé
-    obj = await Employee.create(**emp.dict())
-    return await Employee.get(id=obj.id)
-
-# Route GET pour lister les employés (filtre par département optionnel)
-@router.get("/employees/", response_model=List[EmployeeResponse])
-async def list_employees(department: Optional[str] = None):
-    query = Employee.all()
-    if department: query = query.filter(department=department)
-    return await query
-
 # Route POST pour créer une prime
 @router.post("/bonuses/", response_model=BonusResponse)
 async def create_bonus(bonus: BonusCreate, user_id: int):

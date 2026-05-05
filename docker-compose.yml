@@ -12,5 +12,30 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  backend:
+    build: ./backend
+    container_name: bpm_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://postgres:mysecretpassword@db:5432/bpm_primes_db
+
+  frontend:
+    build: ./frontend
+    container_name: bpm_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Exclude node_modules from hot-reload
+    depends_on:
+      - backend
+    environment:
+      - CHOKIDAR_USEPOLLING=true  # For hot-reload on Windows
+
 volumes:
   postgres_data:

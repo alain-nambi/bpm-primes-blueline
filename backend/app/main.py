@@ -5,13 +5,14 @@ from tortoise.contrib.fastapi import register_tortoise
 # Import de la config de base de données
 from app.db_config import TORTOISE_ORM
 # Import des routes API
-from app.api import endpoints
+from app.api import endpoints, employees
 
 # Création de l'instance FastAPI avec titre et version
 app = FastAPI(title="BPM Primes API", version="1.0.0")
 
 # Inclusion des routes de l'API avec préfixe /api/v1
 app.include_router(endpoints.router, prefix="/api/v1")
+app.include_router(employees.router, prefix="/api/v1/employees")
 
 # Enregistrement de Tortoise ORM avec FastAPI :
 # - Crée automatiquement les tables si besoin

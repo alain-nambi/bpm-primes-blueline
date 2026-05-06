@@ -24,3 +24,8 @@ async def list_employees(department: Optional[str] = None):
     query = Employee.all()
     if department: query = query.filter(department=department)
     return await query
+
+
+@router.get("/{emp_id}", response_model=EmployeeResponse)
+async def get_employee(emp_id: int):
+    return await Employee.get(id=emp_id)

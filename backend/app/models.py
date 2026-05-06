@@ -22,7 +22,7 @@ class DepartmentType(str, Enum):
     DSI = "DSI"
     DT = "DT"
     LOGISTIQUE = "Logistique"
-    DIR_GENERALE = "Dir générale"
+    DG = "DG"
 
 # Enumération des types de primes
 class BonusType(str, Enum):
@@ -36,8 +36,9 @@ class ValidationStatus(str, Enum):
     EN_ATTENTE_N1 = "En attente N+1"
     EN_ATTENTE_DIRECTEUR = "En attente Directeur"
     EN_ATTENTE_DG = "En attente DG"
-    VALIDE = "Validé"
-    REJETE = "Rejeté"
+    EN_ATTENTE_DRH = "En attente DRH"
+    VALIDE = "Prime validée"
+    REJETE = "Prime rejetée"
 
 # Modèle Utilisateur (table "user")
 class User(models.Model):

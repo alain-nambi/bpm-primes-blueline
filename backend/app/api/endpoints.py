@@ -52,7 +52,21 @@ async def validate_bonus(bonus_id: int, validation: ValidationCreate, step: str)
     await Validation.create(**validation.dict())
     # Mise à jour du statut selon l'étape et l'action
     if validation.action == "VALIDER":
-        bonus.status = {"N1": ValidationStatus.EN_ATTENTE_DIRECTEUR, "DIRECTEUR": ValidationStatus.EN_ATTENTE_DG, "DG": ValidationStatus.VALIDE}[step]
+        bonus.status = {
+            "N1": ValidationStatus.EN_ATTENTE_DIRECTEUR, 
+            "DIRECTEUR": ValidationStatus.EN_ATTENTE_DRH, 
+            "DRH": ValidationStatus.EN_ATTENTE_DG,
+            "DG": ValidationStatus.VALIDE
+        }[step]
+        
+        if bonus.status == ValidationStatus.VALIDE:
+            await Validation.create(
+                bonus_id=bonus.id, 
+                validator_id=validation.validator_id, 
+                step="CLOSED", 
+                action="AUTOMATIC", 
+                note="Prime validée par DG"
+            )
     elif validation.action == "REJETER":
         bonus.status = ValidationStatus.REJETE
     # Sauvegarde de la prime

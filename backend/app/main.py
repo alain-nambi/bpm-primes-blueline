@@ -15,11 +15,10 @@ app.include_router(endpoints.router, prefix="/api/v1")
 app.include_router(employees.router, prefix="/api/v1/employees")
 
 # Enregistrement de Tortoise ORM avec FastAPI :
-# - Crée automatiquement les tables si besoin
+# - Pas de generate_schemas ici (on utilise Aerich en Docker)
 # - Gère les erreurs de base de données
 register_tortoise(
     app,
     config=TORTOISE_ORM,
-    generate_schemas=True,
     add_exception_handlers=True,
 )

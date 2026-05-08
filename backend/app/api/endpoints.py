@@ -4,13 +4,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 # Imports des modèles
 from app.models import User, Employee, Bonus, Validation, PrimeMax
+# Import de l'auth
+from app.auth import get_current_user
 # Imports des schémas
 from app.schemas import *
 # Imports FastAPI pour les erreurs
 from fastapi import HTTPException
 
 # Création du routeur API
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 # Route POST pour créer une prime

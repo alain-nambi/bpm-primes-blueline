@@ -1,14 +1,16 @@
 # Imports FastAPI pour les routes et les erreurs
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 # Imports de typage
 from typing import List, Optional
 # Imports des modèles
 from app.models import Employee
 # Imports des schémas
 from app.schemas import *
+# Import de l'auth
+from app.auth import get_current_user
 
 # Création du routeur API
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 
 # Route POST pour créer un employé

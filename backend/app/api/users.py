@@ -8,12 +8,14 @@ from app.models import User, Employee, Bonus, Validation, PrimeMax
 from app.schemas import *
 # Imports FastAPI pour les erreurs
 from fastapi import HTTPException
+# Import de l'auth
+from app.auth import get_current_user
 
 # Création du routeur API
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(get_current_user)])
 
 # Route POST pour créer un utilisateur
-@router.post("/users/", response_model=UserResponse)
+@router.post("/", response_model=UserResponse)
 async def create_user(user: UserCreate):
     # Création de l'utilisateur en base
     obj = await User.create(**user.dict())
@@ -21,7 +23,7 @@ async def create_user(user: UserCreate):
     return await User.get(id=obj.id)
 
 # Route GET pour lister les utilisateurs
-@router.get("/users/", response_model=List[UserResponse])
+@router.get("/", response_model=List[UserResponse])
 async def list_users():
     # Retourne tous les utilisateurs
     return await User.all()

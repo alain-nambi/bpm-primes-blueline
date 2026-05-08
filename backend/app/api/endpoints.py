@@ -47,7 +47,7 @@ async def validate_bonus(bonus_id: int, validation: ValidationCreate, step: str)
     if validation.action == "VALIDER":
         bonus.status = {
             "N1": ValidationStatus.EN_ATTENTE_DIRECTEUR, 
-            "DIRECTEUR": ValidationStatus.EN_ATTENTE_DG, 
+            "DIRECTEUR": ValidationStatus.EN_ATTENTE_DG,
             "DG": ValidationStatus.VALIDE
         }[step]
         

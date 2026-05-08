@@ -1,0 +1,47 @@
+from fastapi import APIRouter, HTTPException, status
+from app.models import User
+from app.schemas import LoginRequest, SignUpRequest, SignUpResponse, Token
+from app.auth import get_password_hash, verify_password, create_access_token, get_current_user
+from fastapi import Depends
+
+router = APIRouter()
+
+@router.post("/signup", response_model=SignUpResponse, status_code=status.HTTP_201_CREATED)
+async def signup(data: SignUpRequest):
+    existing = await User.get_or_none(email=data.email)
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    user = await User.create(
+        email=data.email,
+        name=data.name,
+        password_hash=get_password_hash(data.password),
+        poste=data.poste,
+        department=data.department,
+    )
+    
+    return {
+        'message': 'User created successfully',
+        'user': user
+    }
+
+@router.post("/login", response_model=Token)
+async def login(data: LoginRequest):
+    user = await User.get_or_none(email=data.email)
+    if not user or not verify_password(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    token = create_access_token({"sub": str(user.id)})
+    return {"access_token": token, "token_type": "bearer"}
+
+@router.get("/me")
+async def get_me(user: User = Depends(get_current_user)):
+    return {
+        "id": user.id,
+        "email": user.email,
+        "name": user.name,
+        "poste": user.poste,
+        "department": user.department,
+        "is_validator_n1": user.is_validator_n1,
+        "is_directeur": user.is_directeur,
+        "is_drh": user.is_drh,
+        "is_dg": user.is_dg,
+    }

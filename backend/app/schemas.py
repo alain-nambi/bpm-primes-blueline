@@ -7,6 +7,23 @@ from datetime import datetime
 # Import des enums depuis les modèles
 from app.models import DepartmentType, BonusType, ValidationStatus
 
+# Schémas pour l'authentification
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class SignUpRequest(BaseModel):
+    email: str
+    name: str
+    password: str
+    poste: Optional[str] = None
+    department: Optional[DepartmentType] = None
+    
+    
 # Schéma de base pour les utilisateurs
 class UserBase(BaseModel):
     email: str
@@ -25,8 +42,11 @@ class UserCreate(UserBase): pass
 class UserResponse(UserBase):
     id: int
     created_at: datetime
-    # Configuration Pydantic pour lire depuis les attributs de l'ORM
     class Config: from_attributes = True
+
+class SignUpResponse(BaseModel):
+    message: str
+    user: UserResponse
 
 # Schéma de base pour les employés
 class EmployeeBase(BaseModel):

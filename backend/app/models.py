@@ -36,7 +36,6 @@ class ValidationStatus(str, Enum):
     EN_ATTENTE_N1 = "En attente N+1"
     EN_ATTENTE_DIRECTEUR = "En attente Directeur"
     EN_ATTENTE_DG = "En attente DG"
-    EN_ATTENTE_DRH = "En attente DRH"
     VALIDE = "Prime validée"
     REJETE = "Prime rejetée"
 
@@ -60,6 +59,8 @@ class User(models.Model):
     is_drh = fields.BooleanField(default=False)
     # Boolean : est Directeur Général ?
     is_dg = fields.BooleanField(default=False)
+    # Mot de passe hashé
+    password_hash = fields.CharField(max_length=255, null=True)
     # Date de création automatique
     created_at = fields.DatetimeField(auto_now_add=True)
 

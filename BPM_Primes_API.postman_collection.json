@@ -1,25 +1,114 @@
 {
   "info": {
     "name": "BPM Primes API",
-    "description": "Collection pour tester l'API BPM Primes Blueline",
+    "description": "Collection pour tester l'API BPM Primes Blueline\n\n## Authentification\n1. Commence par \"Signup\" pour créer un compte (retourne un message, pas de token)\n2. Puis \"Login\" pour récupérer un token JWT\n3. Le token est automatiquement stocké dans la variable `token` après le login\n4. Toutes les autres requêtes l'utilisent automatiquement\n\n## Workflow validation\nCréer prime (N+1) → Valider N+1 → Valider Directeur → Valider DG → Clôture auto",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "base_url",
       "value": "http://localhost:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
     }
   ],
   "item": [
     {
-      "name": "Users",
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "Signup (Inscription)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "console.log(jsonData.message || 'Inscription effectuée');",
+                  "console.log('Utilise Login pour récupérer un token')"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/signup",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nouveau.user@blueline.mg\",\n  \"name\": \"Nouvel Utilisateur\",\n  \"password\": \"monPassword123\",\n  \"poste\": \"Développeur\",\n  \"department\": \"DSI\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (Connexion)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.access_token) {",
+                  "    pm.collectionVariables.set('token', jsonData.access_token);",
+                  "    console.log('Token stocké !');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/login",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nouveau.user@blueline.mg\",\n  \"password\": \"monPassword123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Mon profil (me)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/auth/me",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Users",
       "item": [
         {
           "name": "Liste des utilisateurs",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/v1/users/",
-            "header": []
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
           }
         },
         {
@@ -31,6 +120,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
               }
             ],
             "body": {
@@ -42,14 +135,19 @@
       ]
     },
     {
-      "name": "Employees",
+      "name": "👤 Employees",
       "item": [
         {
           "name": "Liste des employés",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/v1/employees/",
-            "header": []
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
           }
         },
         {
@@ -57,7 +155,12 @@
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/v1/employees/?department=DSI",
-            "header": []
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
           }
         },
         {
@@ -69,6 +172,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
               }
             ],
             "body": {
@@ -80,14 +187,19 @@
       ]
     },
     {
-      "name": "Bonuses (Primes)",
+      "name": "💰 Bonuses (Primes)",
       "item": [
         {
           "name": "Liste des primes",
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/v1/bonuses/",
-            "header": []
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
           }
         },
         {
@@ -95,7 +207,12 @@
           "request": {
             "method": "GET",
             "url": "{{base_url}}/api/v1/bonuses/?status=Initialisé",
-            "header": []
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ]
           }
         },
         {
@@ -107,6 +224,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
               }
             ],
             "body": {
@@ -124,6 +245,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
               }
             ],
             "body": {
@@ -141,6 +266,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
               }
             ],
             "body": {
@@ -158,11 +287,57 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
               }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"bonus_id\": 1,\n  \"validator_id\": 1,\n  \"step\": \"N1\",\n  \"action\": \"VALIDER\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Valider (Directeur)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/bonuses/1/validate?step=DIRECTEUR",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bonus_id\": 1,\n  \"validator_id\": 2,\n  \"step\": \"DIRECTEUR\",\n  \"action\": \"VALIDER\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Valider (DG - clôture auto)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/bonuses/1/validate?step=DG",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bonus_id\": 1,\n  \"validator_id\": 4,\n  \"step\": \"DG\",\n  \"action\": \"VALIDER\"\n}"
             }
           }
         },
@@ -175,6 +350,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
               }
             ],
             "body": {
@@ -186,7 +365,7 @@
       ]
     },
     {
-      "name": "Documentation API",
+      "name": "📖 Documentation API",
       "item": [
         {
           "name": "Swagger UI",

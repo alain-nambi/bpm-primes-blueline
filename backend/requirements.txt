@@ -8,3 +8,5 @@ tomlkit
 pydantic
 httpx
 psycopg2-binary
+python-jose
+passlib

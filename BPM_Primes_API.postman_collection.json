@@ -1,18 +1,12 @@
 {
   "info": {
     "name": "BPM Primes API",
-    "description": "Collection pour tester l'API BPM Primes Blueline\n\n## Authentification\n1. Commence par \"Signup\" pour créer un compte (retourne un message, pas de token)\n2. Puis \"Login\" pour récupérer un token JWT (stocké automatiquement dans variable `token`)\n3. Toutes les autres requêtes utilisent `{{token}}` automatiquement\n\n## Changements récents\n- month/year remplacés par start_date/end_date (format YYYY-MM-DD)\n- Anti-chevauchement : pas de même type de prime sur une période qui se chevauche pour le même employé\n- Erreurs propres en français (ex: \"Employé (ID 999) introuvable\")\n\n## Workflow validation\nCéer prime → Valider N+1 → Valider Directeur → Valider DG → Clôture auto",
+    "description": "Collection pour tester l'API BPM Primes Blueline\n\n## Authentification\n1. Signup → crée un compte (message + user, pas de token)\n2. Login → récupère un JWT (stocké automatiquement dans variable `token`)\n3. Toutes les autres requêtes utilisent `{{token}}`\n\n## Dates\n- Format: YYYY-MM-DD (start_date / end_date)\n- Anti-chevauchement: pas de même type de prime sur période qui se chevauche\n\n## Workflow validation\nCréer prime → Valider N+1 → Valider Directeur → Valider DG → Clôture auto\n(Impossible de sauter une étape)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {
-      "key": "base_url",
-      "value": "http://localhost:8000"
-    },
-    {
-      "key": "token",
-      "value": ""
-    }
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" }
   ],
   "item": [
     {
@@ -20,48 +14,189 @@
       "item": [
         {
           "name": "Signup (Inscription)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var jsonData = pm.response.json();",
-                  "console.log(jsonData.message || 'Inscription effectuée');",
-                  "console.log('Utilise Login pour récupérer un token')"
-                ],
-                "type": "text/javascript"
-              }
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": ["console.log(pm.response.json().message || 'Inscription effectuée'); console.log('Utilise Login pour récupérer un token')"],
+              "type": "text/javascript"
             }
-          ],
+          }],
           "request": {
             "method": "POST",
             "url": "{{base_url}}/api/v1/auth/signup",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"action\": \"REJETER\",\n  \"motif_rejet\": \"Score insuffisant\"\n}"
+              "raw": "{\n  \"email\": \"nouveau@blueline.mg\",\n  \"name\": \"Nouvel Utilisateur\",\n  \"password\": \"monPassword123\",\n  \"poste\": \"Développeur\",\n  \"department\": \"DSI\"\n}"
             }
           }
         },
         {
-          "name": "Test chevauchement (copie de la mensuelle)",
+          "name": "Login (Connexion)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": ["var jsonData = pm.response.json(); if (jsonData.access_token) { pm.collectionVariables.set('token', jsonData.access_token); console.log('Token stocké !'); }"],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nouveau@blueline.mg\",\n  \"password\": \"monPassword123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Mon profil (me)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/auth/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "👥 Users",
+      "item": [
+        {
+          "name": "Liste des utilisateurs",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/users/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "👤 Employees",
+      "item": [
+        {
+          "name": "Liste des employés",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/employees/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Lister par département",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/employees/?department=DSI",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Créer un employé",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/employees/",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"matricule\": \"EMP003\",\n  \"name\": \"Nouvel Employé\",\n  \"department\": \"DSI\",\n  \"manager_id\": 1\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💰 Bonuses (Primes)",
+      "item": [
+        {
+          "name": "Liste des primes",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/bonuses/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Lister par statut",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/bonuses/?status=Initialisé",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Lister par dates",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/bonuses/?start_date=2026-05-01&end_date=2026-05-31",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Lister par type",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/bonuses/?bonus_type=astreinte",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Créer une prime mensuelle",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/api/v1/bonuses/",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"start_date\": \"2026-06-01\",\n  \"end_date\": \"2026-06-30\",\n  \"bonus_type\": \"mensuel\",\n  \"performance_score\": 85.5,\n  \"absences\": 2,\n  \"retard\": 1,\n  \"prime_mensuel_amount\": 150000,\n  \"total_amount\": 150000\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer prime astreinte",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/bonuses/",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"start_date\": \"2026-05-08\",\n  \"end_date\": \"2026-05-15\",\n  \"bonus_type\": \"astreinte\",\n  \"nb_jours_astreinte\": 5,\n  \"taux_jour\": 30000,\n  \"prime_astreinte_amount\": 150000,\n  \"total_amount\": 150000\n}"
+            }
+          }
+        },
+        {
+          "name": "Créer prime commission",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/bonuses/",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 2,\n  \"start_date\": \"2026-05-01\",\n  \"end_date\": \"2026-05-31\",\n  \"bonus_type\": \"commission\",\n  \"ca_realise\": 50000000,\n  \"ca_objectif\": 100000000,\n  \"taux_commission\": 2.5,\n  \"commission_amount\": 1250000,\n  \"total_amount\": 1250000\n}"
+            }
+          }
+        },
+        {
+          "name": "Test chevauchement (copie mensuelle)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/bonuses/",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "body": {
               "mode": "raw",
@@ -75,14 +210,8 @@
             "method": "POST",
             "url": "{{base_url}}/api/v1/bonuses/1/validate?step=N1",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "body": {
               "mode": "raw",
@@ -96,14 +225,8 @@
             "method": "POST",
             "url": "{{base_url}}/api/v1/bonuses/1/validate?step=DIRECTEUR",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "body": {
               "mode": "raw",
@@ -117,14 +240,8 @@
             "method": "POST",
             "url": "{{base_url}}/api/v1/bonuses/1/validate?step=DG",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "body": {
               "mode": "raw",
@@ -138,18 +255,12 @@
             "method": "POST",
             "url": "{{base_url}}/api/v1/bonuses/1/validate?step=N1",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"bonus_id\": 1,\n  \"validator_id\": 1,\n  \"step\": \"N1\",\n  \"action\": \"REJETER\",\n  \"motif_rejet\": \"Score insuffisant\"\n}"
+              "raw": "{\n  \"action\": \"REJETER\",\n  \"motif_rejet\": \"Score insuffisant\"\n}"
             }
           }
         }

@@ -31,13 +31,18 @@ export const getMe = async () => {
   return data;
 };
 
-export const getUsers = async () => {
-  const { data } = await api.get('/users/');
+export const forgotPassword = async (email) => {
+  const { data } = await api.post('/auth/forgot-password', { email });
   return data;
 };
 
-export const createUser = async (userData) => {
-  const { data } = await api.post('/users/', userData);
+export const resetPassword = async (token, newPassword) => {
+  const { data } = await api.post('/auth/reset-password', { token, new_password: newPassword });
+  return data;
+};
+
+export const getUsers = async () => {
+  const { data } = await api.get('/users/');
   return data;
 };
 
@@ -52,21 +57,47 @@ export const createEmployee = async (employeeData) => {
   return data;
 };
 
-export const getBonuses = async (status = null, employeeId = null) => {
+export const getBonuses = async (status = null, employeeId = null, bonusType = null, startDate = null, endDate = null) => {
   const params = {};
   if (status) params.status = status;
   if (employeeId) params.employee_id = employeeId;
+  if (bonusType) params.bonus_type = bonusType;
+  if (startDate) params.start_date = startDate;
+  if (endDate) params.end_date = endDate;
   const { data } = await api.get('/bonuses/', { params });
   return data;
 };
 
-export const createBonus = async (bonusData, userId) => {
-  const { data } = await api.post(`/bonuses/?user_id=${userId}`, bonusData);
+export const createBonus = async (bonusData) => {
+  const { data } = await api.post('/bonuses/', bonusData);
   return data;
 };
 
 export const validateBonus = async (bonusId, validationData, step) => {
   const { data } = await api.post(`/bonuses/${bonusId}/validate?step=${step}`, validationData);
+  return data;
+};
+
+export const getPrimeMax = async (department = null, bonusType = null) => {
+  const params = {};
+  if (department) params.department = department;
+  if (bonusType) params.bonus_type = bonusType;
+  const { data } = await api.get('/primemax/', { params });
+  return data;
+};
+
+export const createPrimeMax = async (primemaxData) => {
+  const { data } = await api.post('/primemax/', primemaxData);
+  return data;
+};
+
+export const updatePrimeMax = async (id, primemaxData) => {
+  const { data } = await api.put(`/primemax/${id}`, primemaxData);
+  return data;
+};
+
+export const deletePrimeMax = async (id) => {
+  const { data } = await api.delete(`/primemax/${id}`);
   return data;
 };
 

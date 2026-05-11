@@ -1,8 +1,11 @@
+import secrets
+from datetime import datetime, timedelta
 from fastapi import APIRouter, HTTPException, status
-from app.models import User
-from app.schemas import LoginRequest, SignUpRequest, SignUpResponse, Token
-from app.auth import get_password_hash, verify_password, create_access_token, get_current_user
 from fastapi import Depends
+from app.models import User
+from app.schemas import LoginRequest, SignUpRequest, SignUpResponse, Token, ForgotPasswordRequest, ResetPasswordRequest
+from app.auth import get_password_hash, verify_password, create_access_token, get_current_user
+from app.email_service import send_reset_email
 
 router = APIRouter()
 
@@ -23,6 +26,29 @@ async def signup(data: SignUpRequest):
         'message': 'User created successfully',
         'user': user
     }
+
+@router.post("/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    user = await User.get_or_none(email=data.email)
+    if user:
+        token = secrets.token_urlsafe(32)
+        user.reset_token = token
+        user.reset_token_expires = datetime.utcnow() + timedelta(minutes=15)
+        await user.save()
+        reset_link = f"http://localhost:3000/reset-password?token={token}"
+        send_reset_email(data.email, reset_link)
+    return {"message": "Si cet email existe, un lien de réinitialisation a été envoyé."}
+
+@router.post("/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    user = await User.get_or_none(reset_token=data.token)
+    if not user or not user.reset_token_expires or user.reset_token_expires < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Token invalide ou expiré.")
+    user.password_hash = get_password_hash(data.new_password)
+    user.reset_token = None
+    user.reset_token_expires = None
+    await user.save()
+    return {"message": "Mot de passe réinitialisé avec succès."}
 
 @router.post("/login", response_model=Token)
 async def login(data: LoginRequest):

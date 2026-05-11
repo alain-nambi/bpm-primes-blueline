@@ -40,6 +40,9 @@ export default function Login() {
             </div>
           </form>
           <p className="text-center mt-4">
+            <Link to="/forgot-password" className="link link-primary">Mot de passe oublié ?</Link>
+          </p>
+          <p className="text-center mt-2">
             Pas encore de compte ? <Link to="/signup" className="link link-primary">S'inscrire</Link>
           </p>
         </div>

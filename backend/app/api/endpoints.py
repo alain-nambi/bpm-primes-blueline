@@ -1,15 +1,13 @@
 # Imports FastAPI pour les routes et les erreurs
 from fastapi import APIRouter, Depends, HTTPException
-# Imports de typage
+from fastapi.responses import StreamingResponse
 from typing import List, Optional
-# Imports des modèles
 from app.models import User, Employee, Bonus, Validation, PrimeMax
-# Import de l'auth
 from app.auth import get_current_user
-# Imports des schémas
 from app.schemas import *
-# Imports FastAPI pour les erreurs
 from fastapi import HTTPException
+import io
+import csv
 
 # Création du routeur API
 router = APIRouter(dependencies=[Depends(get_current_user)])
@@ -18,7 +16,20 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 # Route POST pour créer une prime
 @router.post("/bonuses/", response_model=BonusResponse)
 async def create_bonus(bonus: BonusCreate, user: User = Depends(get_current_user)):
-    # Vérification : pas de chevauchement de période pour le même employé + même type
+    employee = await Employee.get(id=bonus.employee_id)
+
+    primemax = await PrimeMax.filter(
+        department=employee.department,
+        bonus_type=bonus.bonus_type
+    ).first()
+    if primemax and bonus.total_amount > primemax.amount:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Le montant ({bonus.total_amount} Ar) dépasse le plafond "
+                   f"autorisé ({primemax.amount} Ar) pour "
+                   f"'{bonus.bonus_type.value}' dans le département '{employee.department.value}'."
+        )
+
     existing = await Bonus.filter(
         employee_id=bonus.employee_id,
         bonus_type=bonus.bonus_type,
@@ -30,9 +41,7 @@ async def create_bonus(bonus: BonusCreate, user: User = Depends(get_current_user
             status_code=409,
             detail=f"Une prime de type '{bonus.bonus_type.value}' existe déjà sur cette période pour cet employé."
         )
-    # Création de la prime avec le créateur (depuis le token JWT)
     obj = await Bonus.create(**bonus.dict(), created_by_id=user.id)
-    # Récupération avec les relations préchargées
     return await Bonus.get(id=obj.id).prefetch_related('employee')
 
 # Route GET pour lister les primes (filtres optionnels)
@@ -118,3 +127,33 @@ async def validate_bonus(
     # Sauvegarde de la prime
     await bonus.save()
     return {"message": "OK", "status": bonus.status}
+
+
+@router.get("/bonuses/export/sage")
+async def export_sage():
+    bonuses = await Bonus.filter(status=ValidationStatus.VALIDE).prefetch_related('employee')
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Matricule", "Nom", "Departement", "TypePrime",
+        "DateDebut", "DateFin", "Montant", "Statut"
+    ])
+    for b in bonuses:
+        writer.writerow([
+            b.employee.matricule,
+            b.employee.name,
+            b.employee.department.value,
+            b.bonus_type.value,
+            b.start_date.isoformat(),
+            b.end_date.isoformat(),
+            str(b.total_amount),
+            b.status.value
+        ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=export_sage_paie.csv"}
+    )

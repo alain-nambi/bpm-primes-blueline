@@ -61,6 +61,10 @@ class User(models.Model):
     is_dg = fields.BooleanField(default=False)
     # Mot de passe hashé
     password_hash = fields.CharField(max_length=255, null=True)
+    # Token de réinitialisation de mot de passe
+    reset_token = fields.CharField(max_length=255, null=True)
+    # Date d'expiration du token
+    reset_token_expires = fields.DatetimeField(null=True)
     # Date de création automatique
     created_at = fields.DatetimeField(auto_now_add=True)
 

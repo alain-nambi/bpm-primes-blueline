@@ -6,6 +6,8 @@ import BonusesList from './pages/BonusesList';
 import BonusForm from './pages/BonusForm';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -24,6 +26,8 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/bonuses" element={<ProtectedRoute><BonusesList currentUser={user} /></ProtectedRoute>} />
           <Route path="/bonuses/new" element={<ProtectedRoute><BonusForm /></ProtectedRoute>} />

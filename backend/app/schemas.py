@@ -16,6 +16,13 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
 class SignUpRequest(BaseModel):
     email: str
     name: str
@@ -93,6 +100,7 @@ class BonusResponse(BonusBase):
     created_by_id: int
     created_at: datetime
     updated_at: datetime
+    employee: Optional[EmployeeResponse] = None
     class Config: from_attributes = True
 
 # Schéma de création de validation

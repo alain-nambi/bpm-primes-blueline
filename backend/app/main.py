@@ -8,7 +8,7 @@ import re
 # Import de la config de base de données
 from app.db_config import TORTOISE_ORM
 # Import des routes API
-from app.api import endpoints, employees, auth_routes, users
+from app.api import endpoints, employees, auth_routes, users, prime_max
 
 # Création de l'instance FastAPI avec titre et version
 app = FastAPI(title="BPM Primes API", version="1.0.0")
@@ -18,6 +18,7 @@ app.include_router(endpoints.router, prefix="/api/v1")
 app.include_router(employees.router, prefix="/api/v1/employees")
 app.include_router(users.router, prefix="/api/v1/users")
 app.include_router(auth_routes.router, prefix="/api/v1/auth")
+app.include_router(prime_max.router, prefix="/api/v1/primemax")
 
 # Enregistrement de Tortoise ORM avec FastAPI
 register_tortoise(app, config=TORTOISE_ORM, add_exception_handlers=False)

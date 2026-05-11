@@ -6,7 +6,8 @@
   },
   "variable": [
     { "key": "base_url", "value": "http://localhost:8000" },
-    { "key": "token", "value": "" }
+    { "key": "token", "value": "" },
+    { "key": "token_n1", "value": "" }
   ],
   "item": [
     {
@@ -57,6 +58,106 @@
             "url": "{{base_url}}/api/v1/auth/me",
             "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
           }
+        },
+        {
+          "name": "Login DG",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": ["var jsonData = pm.response.json(); if (jsonData.access_token) { pm.collectionVariables.set('token', jsonData.access_token); console.log('Token DG stocké !'); }"],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"dg@blueline.mg\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login N+1 (Manager)",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": ["var jsonData = pm.response.json(); if (jsonData.access_token) { pm.collectionVariables.set('token_n1', jsonData.access_token); console.log('Token N+1 stocké !'); }"],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"vonjy.rakotoniaina@staff.blueline.mg\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login DRH",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": ["var jsonData = pm.response.json(); if (jsonData.access_token) { pm.collectionVariables.set('token', jsonData.access_token); console.log('Token DRH stocké !'); }"],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"johary.drh@blueline.mg\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login Directeur",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": ["var jsonData = pm.response.json(); if (jsonData.access_token) { pm.collectionVariables.set('token', jsonData.access_token); console.log('Token Directeur stocké !'); }"],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rivo@gulfsat.mg\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/forgot-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nouveau@blueline.mg\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/auth/reset-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"TOKEN_REÇU_PAR_EMAIL\",\n  \"new_password\": \"nouveauMot2Passe123\"\n}"
+            }
+          }
         }
       ]
     },
@@ -105,6 +206,30 @@
               "mode": "raw",
               "raw": "{\n  \"matricule\": \"EMP003\",\n  \"name\": \"Nouvel Employé\",\n  \"department\": \"DSI\",\n  \"manager_id\": 1\n}"
             }
+          }
+        },
+        {
+          "name": "Lister (N+1 voit ses managés)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/employees/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token_n1}}" }]
+          }
+        },
+        {
+          "name": "Lister (DG voit tout)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/employees/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Lister (Directeur voit son dép.)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/employees/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
           }
         }
       ]
@@ -262,6 +387,81 @@
               "mode": "raw",
               "raw": "{\n  \"action\": \"REJETER\",\n  \"motif_rejet\": \"Score insuffisant\"\n}"
             }
+          }
+        },
+        {
+          "name": "Export SAGE PAIE (CSV)",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/bonuses/export/sage",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 PrimeMax (Plafonds)",
+      "item": [
+        {
+          "name": "Lister les plafonds",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/primemax/",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Lister par département",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/primemax/?department=DSI",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Créer/MàJ un plafond (upsert)",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/api/v1/primemax/",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"department\": \"DSI\",\n  \"bonus_type\": \"mensuel\",\n  \"amount\": 250000\n}"
+            }
+          }
+        },
+        {
+          "name": "Détail d'un plafond",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/api/v1/primemax/1",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
+          }
+        },
+        {
+          "name": "Modifier un plafond (PUT)",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/api/v1/primemax/1",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"department\": \"DSI\",\n  \"bonus_type\": \"mensuel\",\n  \"amount\": 300000\n}"
+            }
+          }
+        },
+        {
+          "name": "Supprimer un plafond",
+          "request": {
+            "method": "DELETE",
+            "url": "{{base_url}}/api/v1/primemax/1",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }]
           }
         }
       ]

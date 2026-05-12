@@ -4,6 +4,7 @@ import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import BonusesList from './pages/BonusesList'
 import BonusForm from './pages/BonusForm'
+import BonusTypeSelect from './pages/BonusTypeSelect'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
 import ForgotPassword from './pages/ForgotPassword'
@@ -25,7 +26,8 @@ function AppContent() {
       <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/bonuses" element={<ProtectedRoute><BonusesList /></ProtectedRoute>} />
-      <Route path="/bonuses/new" element={<ProtectedRoute><BonusForm /></ProtectedRoute>} />
+      <Route path="/bonuses/new" element={<ProtectedRoute><BonusTypeSelect /></ProtectedRoute>} />
+      <Route path="/bonuses/new/:type" element={<ProtectedRoute><BonusForm /></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute>
         <div className="page-container">
           <h1 className="page-title">Employés</h1>

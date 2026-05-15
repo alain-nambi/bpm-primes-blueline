@@ -71,15 +71,9 @@ const BonusesList = () => {
     ];
 
     const order = [];
-    if (user.is_validator_n1) {
-      order.push('myValidation', 'pendingDirector', 'pendingDG', 'initialised', 'validated');
-    } else if (user.is_directeur) {
-      order.push('myValidation', 'pendingDG', 'initialised', 'pendingDirector', 'validated');
-    } else if (user.is_dg) {
-      order.push('myValidation', 'pendingDirector', 'initialised', 'pendingDG', 'validated');
-    } else {
-      order.push('initialised', 'pendingDirector', 'pendingDG', 'validated');
-    }
+    const hasValidationRole = user.is_validator_n1 || user.is_directeur || user.is_dg;
+    if (hasValidationRole) order.push('myValidation');
+    order.push('initialised', 'pendingDirector', 'pendingDG', 'validated');
 
     const map = new Map(base.map((s) => [s.key, s]));
     return order.map((key) => map.get(key)).filter(Boolean);

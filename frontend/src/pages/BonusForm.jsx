@@ -40,7 +40,7 @@ export default function BonusForm() {
     department: '', service: '', name: '', function: '', matricule: '',
   })
   const [manager, setManager] = useState({ name: '', function: '' })
-  const [params, setParams] = useState({ startDate: today, endDate: today, maxPrime: 150000 })
+  const [params, setParams] = useState({ startDate: monthStart, endDate: monthEnd, maxPrime: 150000 })
   const [budgets, setBudgets] = useState({ quanti: 80000, quali: 70000 })
   const [observation, setObservation] = useState('')
   const [applyToAll, setApplyToAll] = useState(false)
@@ -187,16 +187,16 @@ export default function BonusForm() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const weeks = calcWeeks(astreinteConfig.periodStart, astreinteConfig.periodEnd)
+    const weeks = calcWeeks(params.startDate, params.endDate)
     const totalDispo = disponibilites.reduce((s, d) => s + (parseFloat(d.nombre) || 0) * astreinteConfig.weeklyMax, 0)
     const totalInterv = interventions.filter(i => i.employee_id).length * astreinteConfig.interventionRate
     const amount = totalDispo + totalInterv + (parseFloat(additionalPrimes.exceptionnelle) || 0) + (parseFloat(additionalPrimes.ponctuelle) || 0)
     const empName = (id) => employees.find((e) => e.id === id)?.name || `#${id}`
     try {
       await saveBonus({
-        employee_id: disponibilites.find(d => d.employee_id)?.employee_id || interventions.find(i => i.employee_id)?.employee_id,
-        start_date: astreinteConfig.periodStart,
-        end_date: astreinteConfig.periodEnd,
+        employee_id: selectedEmp?.id,
+        start_date: params.startDate,
+        end_date: params.endDate,
         bonus_type: 'astreinte',
         total_amount: amount,
         nb_jours_astreinte: totalDispo,
@@ -254,8 +254,8 @@ export default function BonusForm() {
     try {
       await saveBonus({
         employee_id: selectedEmp?.id,
-        start_date: commissionConfig.periodStart,
-        end_date: commissionConfig.periodEnd,
+        start_date: params.startDate,
+        end_date: params.endDate,
         bonus_type: 'commission',
         taux_commission: commissionConfig.rate,
         commission_amount: amount,
@@ -365,6 +365,83 @@ export default function BonusForm() {
     </div>
   )
 
+  const sharedHeader = (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="card-blueline p-6">
+        <h2 className="font-semibold text-base-content mb-4">Informations de l'employé</h2>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-base-content/70 mb-1">Employé</label>
+            <select value={selectedEmp?.id || ''} onChange={handleSelectEmployee}
+              className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500">
+              <option value="">Sélectionner...</option>
+              {employees.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.matricule})</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-base-content/70 mb-1">Département</label>
+            <input type="text" value={employee.department} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-base-content/70 mb-1">Nom et prénom</label>
+            <input type="text" value={employee.name} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-base-content/70 mb-1">Matricule</label>
+            <input type="text" value={employee.matricule} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-base-content/70 mb-1">Service</label>
+            <input type="text" value={employee.service} onChange={(e) => setEmployee({ ...employee, service: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+          </div>
+        </div>
+      </div>
+
+      <div className="card-blueline p-6">
+        <h2 className="font-semibold text-base-content mb-4">Responsable & Période</h2>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Nom du responsable</label>
+              <input type="text" value={manager.name || connectedUser?.name || ''} onChange={(e) => setManager({ ...manager, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Rôle</label>
+              <input type="text" value={connectedUser?.is_dg ? 'Directeur Général' : connectedUser?.is_drh ? 'DRH' : connectedUser?.is_directeur ? 'Directeur' : connectedUser?.is_validator_n1 ? 'Validateur N+1' : 'Utilisateur'} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-base-content/70 mb-1">Fonction</label>
+            <input type="text" value={manager.function || connectedUser?.poste || ''} onChange={(e) => setManager({ ...manager, function: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Date début</label>
+              <input type="date" value={params.startDate} onChange={(e) => setParams({ ...params, startDate: e.target.value })} className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 ${params.endDate < params.startDate ? 'border-red-400' : 'border-base-300'}`} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Date fin</label>
+              <input type="date" value={params.endDate} onChange={(e) => setParams({ ...params, endDate: e.target.value })} className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 ${params.endDate < params.startDate ? 'border-red-400' : 'border-base-300'}`} />
+            </div>
+          </div>
+          {params.endDate < params.startDate && (
+            <p className="text-red-500 text-sm mt-1">⚠️ La date de fin ne peut pas être avant la date de début.</p>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-base-content/70 mb-1">Prime maximum (Ar)</label>
+            <input type="number" value={params.maxPrime} onChange={(e) => {
+              const newMax = parseFloat(e.target.value) || 0
+              setParams({ ...params, maxPrime: newMax })
+              if (editType === 'mensuel' && budgets.quanti + budgets.quali > newMax) {
+                setBudgets(prev => ({ ...prev, quali: Math.max(0, newMax - prev.quanti) }))
+              }
+            }} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
   if (type === 'commission') {
     const totalCommission = sales.reduce((s, row) => s + (parseFloat(row.nombre) || 0) * commissionConfig.rate, 0)
 
@@ -376,49 +453,13 @@ export default function BonusForm() {
         </div>
         {error && <div className="bg-red-50 text-red-700 text-sm rounded-lg px-4 py-3 mb-6">⚠️ {error}</div>}
         <form onSubmit={handleSubmitCommission} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="card-blueline p-6">
-              <h2 className="font-semibold text-base-content mb-4">Employé</h2>
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Employé</label>
-                <select value={selectedEmp?.id || ''} onChange={handleSelectEmployee} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500">
-                  <option value="">Sélectionner...</option>
-                  {employees.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.matricule})</option>)}
-                </select>
-              </div>
-            </div>
-            <div className="card-blueline p-6">
-              <h2 className="font-semibold text-base-content mb-4">Responsable</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Nom et prénom</label>
-                  <input type="text" value={connectedUser?.name || ''} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Rôle</label>
-                  <input type="text" value={connectedUser?.is_dg ? 'Directeur Général' : connectedUser?.is_drh ? 'DRH' : connectedUser?.is_directeur ? 'Directeur' : connectedUser?.is_validator_n1 ? 'Validateur N+1' : 'Utilisateur'} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-                </div>
-              </div>
-            </div>
-            <div className="card-blueline p-6">
-              <h2 className="font-semibold text-base-content mb-4">Configuration</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Début période</label>
-                  <input type="date" value={commissionConfig.periodStart} onChange={(e) => handleCommissionConfigChange('periodStart', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Fin période</label>
-                  <input type="date" value={commissionConfig.periodEnd} onChange={(e) => handleCommissionConfigChange('periodEnd', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Commission par vente (Ar)</label>
-                  <input type="number" value={commissionConfig.rate} onChange={(e) => handleCommissionConfigChange('rate', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-              </div>
+          {sharedHeader}
+          <div className="card-blueline p-6">
+            <h2 className="font-semibold text-base-content mb-4">Configuration commission</h2>
+            <div className="max-w-xs">
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Commission par vente (Ar)</label>
+              <input type="number" value={commissionConfig.rate} onChange={(e) => handleCommissionConfigChange('rate', e.target.value)}
+                className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
             </div>
           </div>
 
@@ -500,7 +541,7 @@ export default function BonusForm() {
   }
 
   if (type === 'astreinte') {
-    const weeks = calcWeeks(astreinteConfig.periodStart, astreinteConfig.periodEnd)
+    const weeks = calcWeeks(params.startDate, params.endDate)
     const totalDispo = disponibilites.reduce((s, d) => s + (parseFloat(d.nombre) || 0) * astreinteConfig.weeklyMax, 0)
     const totalInterv = interventions.filter(i => i.employee_id).length * astreinteConfig.interventionRate
     const totalGeneral = totalDispo + totalInterv + (parseFloat(additionalPrimes.exceptionnelle) || 0) + (parseFloat(additionalPrimes.ponctuelle) || 0)
@@ -526,51 +567,7 @@ export default function BonusForm() {
         </div>
         {error && <div className="bg-red-50 text-red-700 text-sm rounded-lg px-4 py-3 mb-6">⚠️ {error}</div>}
         <form onSubmit={handleSubmitAstreinte} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="card-blueline p-6">
-              <h2 className="font-semibold text-base-content mb-4">Responsable</h2>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Nom et prénom</label>
-                  <input type="text" value={connectedUser?.name || ''} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Rôle</label>
-                  <input type="text" value={connectedUser?.is_dg ? 'Directeur Général' : connectedUser?.is_drh ? 'DRH' : connectedUser?.is_directeur ? 'Directeur' : connectedUser?.is_validator_n1 ? 'Validateur N+1' : 'Utilisateur'} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-                </div>
-              </div>
-            </div>
-            <div className="card-blueline p-6">
-              <h2 className="font-semibold text-base-content mb-4">Configuration</h2>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Début période</label>
-                  <input type="date" value={astreinteConfig.periodStart} onChange={(e) => handleConfigChange('periodStart', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Fin période</label>
-                  <input type="date" value={astreinteConfig.periodEnd} onChange={(e) => handleConfigChange('periodEnd', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Nombre de semaines</label>
-                  <input type="number" value={calcWeeks(astreinteConfig.periodStart, astreinteConfig.periodEnd)} readOnly
-                    className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Prime max / semaine (Ar)</label>
-                  <input type="number" value={astreinteConfig.weeklyMax} onChange={(e) => handleConfigChange('weeklyMax', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Taux par intervention (Ar)</label>
-                  <input type="number" value={astreinteConfig.interventionRate} onChange={(e) => handleConfigChange('interventionRate', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-              </div>
-            </div>
-          </div>
+          {sharedHeader}
 
           <div className="card-blueline p-6">
             <div className="flex items-center justify-between mb-4">
@@ -654,7 +651,7 @@ export default function BonusForm() {
                         </select>
                       </td>
                       <td className="py-1 px-2">
-                        <input type="date" value={iv.date} min={astreinteConfig.periodStart} max={astreinteConfig.periodEnd} onChange={(e) => handleIntervChange(i, 'date', e.target.value)}
+                        <input type="date" value={iv.date} min={params.startDate} max={params.endDate} onChange={(e) => handleIntervChange(i, 'date', e.target.value)}
                           className="w-full px-2 py-1 rounded border border-base-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 text-sm" />
                       </td>
                       <td className="py-1 px-2">
@@ -752,77 +749,7 @@ export default function BonusForm() {
       {error && <div className="bg-red-50 text-red-700 text-sm rounded-lg px-4 py-3 mb-6">⚠️ {error}</div>}
 
       <form onSubmit={handleSubmitMensuel}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="card-blueline p-6">
-            <h2 className="font-semibold text-base-content mb-4">Informations de l'employé</h2>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Employé</label>
-                <select value={selectedEmp?.id || ''} onChange={handleSelectEmployee}
-                  className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500">
-                  <option value="">Sélectionner...</option>
-                  {employees.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.matricule})</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Département</label>
-                <input type="text" value={employee.department} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Nom et prénom</label>
-                <input type="text" value={employee.name} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Matricule</label>
-                <input type="text" value={employee.matricule} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Service</label>
-                <input type="text" value={employee.service} onChange={(e) => setEmployee({ ...employee, service: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-              </div>
-            </div>
-          </div>
-
-          <div className="card-blueline p-6">
-            <h2 className="font-semibold text-base-content mb-4">Responsable & Période</h2>
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Nom du responsable</label>
-                  <input type="text" value={manager.name || connectedUser?.name || ''} onChange={(e) => setManager({ ...manager, name: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Rôle</label>
-                  <input type="text" value={connectedUser?.is_dg ? 'Directeur Général' : connectedUser?.is_drh ? 'DRH' : connectedUser?.is_directeur ? 'Directeur' : connectedUser?.is_validator_n1 ? 'Validateur N+1' : 'Utilisateur'} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Fonction</label>
-                <input type="text" value={manager.function || connectedUser?.poste || ''} onChange={(e) => setManager({ ...manager, function: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Date début</label>
-                  <input type="date" value={params.startDate} onChange={(e) => setParams({ ...params, startDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-base-content/70 mb-1">Date fin</label>
-                  <input type="date" value={params.endDate} onChange={(e) => setParams({ ...params, endDate: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Prime maximum (Ar)</label>
-                <input type="number" value={params.maxPrime} onChange={(e) => {
-                  const newMax = parseFloat(e.target.value) || 0
-                  setParams({ ...params, maxPrime: newMax })
-                  if (budgets.quanti + budgets.quali > newMax) {
-                    setBudgets(prev => ({ ...prev, quali: Math.max(0, newMax - prev.quanti) }))
-                  }
-                }} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-              </div>
-            </div>
-          </div>
-        </div>
+        {sharedHeader}
 
         <div className="card-blueline p-6 mb-6">
           <div className="flex items-center justify-between mb-4">

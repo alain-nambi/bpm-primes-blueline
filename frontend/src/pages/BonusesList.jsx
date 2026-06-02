@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { getBonuses, validateBonus } from '../services/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { EyeIcon, CheckIcon, EditIcon, DownloadIcon, CalendarIcon, MoonIcon, ChartIcon, FilterIcon } from '../components/Icons';
 
@@ -220,9 +220,9 @@ const BonusesList = () => {
                         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                           <span className="text-sm font-bold text-blue-600">{bonus.total_amount} Ar</span>
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                            <Link to={`/bonuses/${bonus.id}`} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600" title="Voir le détail">
+                            <button onClick={() => navigate(`/bonuses/${bonus.id}`)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600" title="Voir le détail">
                               <EyeIcon className="w-4 h-4" />
-                            </Link>
+                            </button>
                             {step && !bonus.was_rejected && (
                               <button
                                 className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-600"
@@ -233,9 +233,9 @@ const BonusesList = () => {
                               </button>
                             )}
                             {step && bonus.was_rejected && (
-                              <Link to={`/bonuses/edit/${bonus.id}`} className="p-1.5 rounded-lg hover:bg-amber-50 text-gray-400 hover:text-amber-600" title="Modifier">
+                              <button onClick={() => navigate(`/bonuses/edit/${bonus.id}`)} className="p-1.5 rounded-lg hover:bg-amber-50 text-gray-400 hover:text-amber-600" title="Modifier">
                                 <EditIcon className="w-4 h-4" />
-                              </Link>
+                              </button>
                             )}
                           </div>
                         </div>

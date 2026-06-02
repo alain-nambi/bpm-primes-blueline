@@ -89,6 +89,14 @@ export default function BonusForm() {
     { key: 2, employee_id: '', date: '', heure: '', motif: '', ticket: '' },
   ])
   const [additionalPrimes, setAdditionalPrimes] = useState({ exceptionnelle: 0, ponctuelle: 0 })
+  const [perEmployeeAdditional, setPerEmployeeAdditional] = useState({})
+
+  const handleEmpAdditional = (empId, field, value) => {
+    setPerEmployeeAdditional(prev => ({
+      ...prev,
+      [empId]: { ...prev[empId], [field]: parseFloat(value) || 0 }
+    }))
+  }
   const [commissionConfig, setCommissionConfig] = useState({
     periodStart: monthStart, periodEnd: monthEnd, rate: 15000,
   })
@@ -211,37 +219,55 @@ export default function BonusForm() {
     setError('')
     setLoading(true)
     const weeks = calcWeeks(params.startDate, params.endDate)
-    const totalDispo = disponibilites.reduce((s, d) => s + (parseFloat(d.nombre) || 0) * astreinteConfig.weeklyMax, 0)
-    const totalInterv = interventions.filter(i => i.employee_id).length * astreinteConfig.interventionRate
-    const amount = totalDispo + totalInterv + (parseFloat(additionalPrimes.exceptionnelle) || 0) + (parseFloat(additionalPrimes.ponctuelle) || 0)
     const empName = (id) => employees.find((e) => e.id === id)?.name || `#${id}`
+
+    const allEmpIds = [...new Set([
+      ...disponibilites.map(d => d.employee_id),
+      ...interventions.map(i => i.employee_id),
+    ])].filter(Boolean)
+
+    if (allEmpIds.length === 0) {
+      setError('Ajoutez au moins un employé dans les tableaux Disponibilité ou Interventions.')
+      setLoading(false)
+      return
+    }
+
     try {
-      await saveBonus({
-        employee_id: selectedEmp?.id,
-        start_date: params.startDate,
-        end_date: params.endDate,
-        bonus_type: 'astreinte',
-        total_amount: amount,
-        nb_jours_astreinte: totalDispo,
-        taux_jour: astreinteConfig.weeklyMax,
-        prime_astreinte_amount: totalInterv,
-        details: {
-          weeks,
-          weekly_max: astreinteConfig.weeklyMax,
-          intervention_rate: astreinteConfig.interventionRate,
-          disponibilites: disponibilites.filter((d) => d.employee_id).map((d) => ({
-            employee_id: d.employee_id, employee_name: empName(d.employee_id), nombre: d.nombre,
-          })),
-          interventions: interventions.filter((i) => i.employee_id).map((i) => ({
-            employee_id: i.employee_id, employee_name: empName(i.employee_id),
-            date: i.date, heure: i.heure, motif: i.motif, ticket: i.ticket,
-          })),
-          total_dispo: totalDispo,
-          total_interv: totalInterv,
-          exceptionnelle: parseFloat(additionalPrimes.exceptionnelle) || 0,
-          ponctuelle: parseFloat(additionalPrimes.ponctuelle) || 0,
-        },
-      })
+      await Promise.all(allEmpIds.map(employee_id => {
+        const empDispos = disponibilites.filter(d => d.employee_id === employee_id)
+        const empIntervs = interventions.filter(i => i.employee_id === employee_id)
+        const totalDispo = empDispos.reduce((s, d) => s + (parseFloat(d.nombre) || 0) * astreinteConfig.weeklyMax, 0)
+        const totalInterv = empIntervs.length * astreinteConfig.interventionRate
+        const empAdd = perEmployeeAdditional[employee_id] || {}
+        const amount = totalDispo + totalInterv + (empAdd.exceptionnelle || 0) + (empAdd.ponctuelle || 0)
+
+        return saveBonus({
+          employee_id,
+          start_date: params.startDate,
+          end_date: params.endDate,
+          bonus_type: 'astreinte',
+          total_amount: amount,
+          nb_jours_astreinte: totalDispo,
+          taux_jour: astreinteConfig.weeklyMax,
+          prime_astreinte_amount: totalInterv,
+          details: {
+            weeks,
+            weekly_max: astreinteConfig.weeklyMax,
+            intervention_rate: astreinteConfig.interventionRate,
+            disponibilites: empDispos.map(d => ({
+              employee_id: d.employee_id, employee_name: empName(d.employee_id), nombre: d.nombre,
+            })),
+            interventions: empIntervs.map(i => ({
+              employee_id: i.employee_id, employee_name: empName(i.employee_id),
+              date: i.date, heure: i.heure, motif: i.motif, ticket: i.ticket,
+            })),
+            total_dispo: totalDispo,
+            total_interv: totalInterv,
+            exceptionnelle: empAdd.exceptionnelle || 0,
+            ponctuelle: empAdd.ponctuelle || 0,
+          },
+        })
+      }))
       navigateAfterSave()
     } catch (err) {
       setError(err.response?.status === 409 ? 'Cette prime existe déjà pour cet employé sur cette période.' : (err.response?.data?.detail || "Erreur lors de la création"))
@@ -393,32 +419,40 @@ export default function BonusForm() {
   const sharedHeader = (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
       <div className="card-blueline p-6">
-        <h2 className="font-semibold text-base-content mb-4">Informations de l'employé</h2>
+        <h2 className="font-semibold text-base-content mb-4">{editType === 'astreinte' ? 'Responsable' : "Informations de l'employé"}</h2>
         <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium text-base-content/70 mb-1">Employé</label>
-            <select value={selectedEmp?.id || ''} onChange={handleSelectEmployee}
-              className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500">
-              <option value="">Sélectionner...</option>
-              {employees.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.matricule})</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-base-content/70 mb-1">Département</label>
-            <input type="text" value={employee.department} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-base-content/70 mb-1">Nom et prénom</label>
-            <input type="text" value={employee.name} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-base-content/70 mb-1">Matricule</label>
-            <input type="text" value={employee.matricule} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-base-content/70 mb-1">Service</label>
-            <input type="text" value={employee.service} onChange={(e) => setEmployee({ ...employee, service: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-          </div>
+          {editType === 'astreinte' ? (
+            <div className="bg-blue-50 text-blue-700 text-sm rounded-lg px-3 py-2">
+              Les employés sont définis dans les tableaux ci-dessous. Une prime sera créée par employé.
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Employé</label>
+              <select value={selectedEmp?.id || ''} onChange={handleSelectEmployee}
+                className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500">
+                <option value="">Sélectionner...</option>
+                {employees.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.matricule})</option>)}
+              </select>
+            </div>
+          )}
+          {editType !== 'astreinte' && (<>
+            <div>
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Département</label>
+              <input type="text" value={employee.department} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Nom et prénom</label>
+              <input type="text" value={employee.name} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Matricule</label>
+              <input type="text" value={employee.matricule} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-base-content/70 mb-1">Service</label>
+              <input type="text" value={employee.service} onChange={(e) => setEmployee({ ...employee, service: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+            </div>
+          </>)}
         </div>
       </div>
 
@@ -438,17 +472,17 @@ export default function BonusForm() {
           <div>
             <label className="block text-sm font-medium text-base-content/70 mb-1">Fonction</label>
             <input type="text" value={manager.function || connectedUser?.poste || ''} onChange={(e) => setManager({ ...manager, function: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-base-content/70 mb-1">Date début</label>
-              <input type="date" value={params.startDate} onChange={(e) => setParams({ ...params, startDate: e.target.value })} className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 ${params.endDate < params.startDate ? 'border-red-400' : 'border-base-300'}`} />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-base-content/70 mb-1">Date fin</label>
-              <input type="date" value={params.endDate} onChange={(e) => setParams({ ...params, endDate: e.target.value })} className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 ${params.endDate < params.startDate ? 'border-red-400' : 'border-base-300'}`} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Date début</label>
+                <input type="date" value={params.startDate} onChange={(e) => setParams({ ...params, startDate: e.target.value })} className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 ${params.endDate < params.startDate ? 'border-red-400' : 'border-base-300'}`} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Date fin</label>
+                <input type="date" value={params.endDate} onChange={(e) => setParams({ ...params, endDate: e.target.value })} className={`w-full px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 ${params.endDate < params.startDate ? 'border-red-400' : 'border-base-300'}`} />
+              </div>
             </div>
-          </div>
           {params.endDate < params.startDate && (
             <p className="text-red-500 text-sm mt-1">⚠️ La date de fin ne peut pas être avant la date de début.</p>
           )}
@@ -580,7 +614,8 @@ export default function BonusForm() {
     const weeks = calcWeeks(params.startDate, params.endDate)
     const totalDispo = disponibilites.reduce((s, d) => s + (parseFloat(d.nombre) || 0) * astreinteConfig.weeklyMax, 0)
     const totalInterv = interventions.filter(i => i.employee_id).length * astreinteConfig.interventionRate
-    const totalGeneral = totalDispo + totalInterv + (parseFloat(additionalPrimes.exceptionnelle) || 0) + (parseFloat(additionalPrimes.ponctuelle) || 0)
+    const totalGeneral = totalDispo + totalInterv + Object.values(perEmployeeAdditional).reduce((s, v) => s + (v.exceptionnelle || 0) + (v.ponctuelle || 0), 0)
+    const primeCount = [...new Set([...disponibilites.map(d => d.employee_id), ...interventions.map(i => i.employee_id)])].filter(Boolean).length
     const employeeTotals = {}
     disponibilites.forEach(d => {
       if (!d.employee_id) return
@@ -593,6 +628,11 @@ export default function BonusForm() {
       const emp = employees.find(e => e.id === iv.employee_id)
       if (!employeeTotals[iv.employee_id]) employeeTotals[iv.employee_id] = { name: emp ? emp.name : `#${iv.employee_id}`, dispo: 0, interv: 0 }
       employeeTotals[iv.employee_id].interv += astreinteConfig.interventionRate
+    })
+    Object.keys(employeeTotals).forEach(id => {
+      const add = perEmployeeAdditional[id] || {}
+      employeeTotals[id].exceptionnelle = add.exceptionnelle || 0
+      employeeTotals[id].ponctuelle = add.ponctuelle || 0
     })
 
     return (
@@ -723,7 +763,7 @@ export default function BonusForm() {
           </div>
 
           <div className="card-blueline p-6">
-            <h2 className="font-semibold text-base-content mb-4">Récapitulatif par employé</h2>
+            <h2 className="font-semibold text-base-content mb-4">Récapitulatif par employé <span className="text-sm font-normal text-base-content/50">(1 prime par employé)</span></h2>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -731,6 +771,8 @@ export default function BonusForm() {
                     <th className="text-left py-2 px-2 font-medium text-base-content/60">Employé</th>
                     <th className="text-right py-2 px-2 font-medium text-base-content/60">Disponibilité</th>
                     <th className="text-right py-2 px-2 font-medium text-base-content/60">Interventions</th>
+                    <th className="text-right py-2 px-2 font-medium text-base-content/60">Exceptionnelle</th>
+                    <th className="text-right py-2 px-2 font-medium text-base-content/60">Ponctuelle</th>
                     <th className="text-right py-2 px-2 font-medium text-base-content/60">Total</th>
                   </tr>
                 </thead>
@@ -740,23 +782,21 @@ export default function BonusForm() {
                       <td className="py-2 px-2 font-medium">{e.name}</td>
                       <td className="py-2 px-2 text-right">{e.dispo.toLocaleString('fr-FR')} Ar</td>
                       <td className="py-2 px-2 text-right">{e.interv.toLocaleString('fr-FR')} Ar</td>
-                      <td className="py-2 px-2 text-right font-semibold">{(e.dispo + e.interv).toLocaleString('fr-FR')} Ar</td>
+                      <td className="py-2 px-2 text-right">
+                        <input type="number" value={perEmployeeAdditional[id]?.exceptionnelle || 0}
+                          onChange={(e) => handleEmpAdditional(id, 'exceptionnelle', e.target.value)}
+                          className="w-24 px-2 py-1 rounded border border-base-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+                      </td>
+                      <td className="py-2 px-2 text-right">
+                        <input type="number" value={perEmployeeAdditional[id]?.ponctuelle || 0}
+                          onChange={(e) => handleEmpAdditional(id, 'ponctuelle', e.target.value)}
+                          className="w-24 px-2 py-1 rounded border border-base-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+                      </td>
+                      <td className="py-2 px-2 text-right font-semibold">{(e.dispo + e.interv + (e.exceptionnelle || 0) + (e.ponctuelle || 0)).toLocaleString('fr-FR')} Ar</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
-            <div className="border-t border-base-200 pt-3 mt-3 grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Prime exceptionnelle (Ar)</label>
-                <input type="number" value={additionalPrimes.exceptionnelle} onChange={(e) => setAdditionalPrimes({ ...additionalPrimes, exceptionnelle: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-base-content/70 mb-1">Prime ponctuelle (Ar)</label>
-                <input type="number" value={additionalPrimes.ponctuelle} onChange={(e) => setAdditionalPrimes({ ...additionalPrimes, ponctuelle: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-              </div>
             </div>
             <div className="flex justify-between text-lg font-bold border-t-2 border-brand-200 pt-3 mt-3">
               <span>Total Général</span>
@@ -767,7 +807,7 @@ export default function BonusForm() {
           <div className="flex gap-3 justify-end">
             <Link to="/bonuses/new" className="btn btn-ghost">Annuler</Link>
             <button type="submit" disabled={loading} className="btn bg-brand-600 hover:bg-brand-700 text-white border-0">
-              {loading ? <span className="loading loading-spinner" /> : 'Créer la prime'}
+              {loading ? <span className="loading loading-spinner" /> : `Créer les primes (${primeCount})`}
             </button>
           </div>
         </form>

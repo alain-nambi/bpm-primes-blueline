@@ -23,9 +23,15 @@ const typeLabels = {
 };
 
 const getBadgeClass = (status) => {
-  if (status === 'Prime validée' || status === 'Validé') return 'bg-emerald-100 text-emerald-700';
-  if (status === 'Prime rejetée' || status === 'Rejeté') return 'bg-red-100 text-red-700';
-  return 'bg-amber-100 text-amber-700';
+  const map = {
+    'Initialisé': 'bg-orange-100 text-orange-700',
+    'En attente N+1': 'bg-blue-100 text-blue-700',
+    'En attente Directeur': 'bg-purple-100 text-purple-700',
+    'En attente DG': 'bg-amber-100 text-amber-700',
+    'Prime validée': 'bg-emerald-100 text-emerald-700',
+    'Prime rejetée': 'bg-red-100 text-red-700',
+  };
+  return map[status] || 'bg-gray-100 text-gray-600';
 };
 
 const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR', {
@@ -77,7 +83,7 @@ const Employees = () => {
 
   const loadEmployeeBonuses = async (emp) => {
     setSelectedEmp(emp);
-    if (user?.department && emp.department !== user.department) {
+    if (!user?.is_dg && !user?.is_drh && user?.department && emp.department !== user.department) {
       setEmpBonuses([]);
       setBonusesLoading(false);
       return;
@@ -144,7 +150,8 @@ const Employees = () => {
       <div className="flex items-center gap-2 mb-4">
         <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}
           className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
-          <option value="">Mon département{user?.department ? ` (${user.department})` : ''}</option>
+          <option value="">Tous les départements</option>
+          {user?.department && <option value={user.department}>Mon département ({user.department})</option>}
           {DEPARTMENTS.filter(d => d !== user?.department).map((d) => (
             <option key={d} value={d}>{d}</option>
           ))}
@@ -198,7 +205,7 @@ const Employees = () => {
           <div className="p-3">
             {bonusesLoading ? (
               <div className="flex justify-center py-8"><span className="loading loading-spinner loading-sm" /></div>
-            ) : selectedEmp.department !== user?.department ? (
+            ) : !user?.is_dg && !user?.is_drh && selectedEmp.department !== user?.department ? (
               <p className="text-center text-gray-400 py-6 text-sm">Vous ne pouvez voir que les primes des employés de votre département</p>
             ) : empBonuses.length === 0 ? (
               <p className="text-center text-gray-400 py-6 text-sm">Aucune prime pour cet employé</p>
@@ -216,7 +223,7 @@ const Employees = () => {
                           </div>
                           <span className="text-xs font-medium text-gray-700">{typeLabels[bonus.bonus_type] || bonus.bonus_type}</span>
                         </div>
-                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${getBadgeClass(bonus.status)}`}>
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${getBadgeClass(bonus.status)} ${bonus.was_rejected ? 'ring-1 ring-red-400' : ''}`}>
                           {bonus.status}
                         </span>
                       </div>

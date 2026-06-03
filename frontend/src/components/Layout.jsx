@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { DashboardIcon, EmployeesIcon, BonusesIcon, SettingsIcon, MenuIcon, XMarkIcon, UserIcon, LogoutIcon } from './Icons'
+import { DashboardIcon, EmployeesIcon, BonusesIcon, SettingsIcon, MenuIcon, XMarkIcon, UserIcon, LogoutIcon, LockIcon, ChevronDownIcon } from './Icons'
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: DashboardIcon },
@@ -14,6 +14,16 @@ export default function Layout({ children }) {
   const { user, logout } = useAuth()
   const { pathname } = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setUserMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -49,19 +59,38 @@ export default function Layout({ children }) {
 
             {/* Right: user menu */}
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex items-center gap-3 text-sm">
-                <div className="text-right">
-                  <p className="font-medium text-gray-900">{user?.name || 'User'}</p>
-                  <p className="text-xs text-gray-400">{user?.email}</p>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm">
-                  {user?.name?.charAt(0)?.toUpperCase() || '?'}
-                </div>
+              <div className="relative" ref={menuRef}>
+                <button onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="hidden sm:flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm">
+                    {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div className="text-left text-sm leading-tight">
+                    <p className="font-medium text-gray-900">{user?.name || 'User'}</p>
+                    <p className="text-[11px] text-gray-400">{user?.email}</p>
+                  </div>
+                  <ChevronDownIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-1.5 animate-scaleIn">
+                    <div className="px-4 py-2.5 border-b border-gray-100">
+                      <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
+                      <p className="text-xs text-gray-400 truncate mt-0.5">{user?.email}</p>
+                    </div>
+                    <button className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                      <LockIcon className="w-4 h-4 text-gray-400" />
+                      Changer mot de passe
+                    </button>
+                    <hr className="my-1 border-gray-100" />
+                    <button onClick={logout} className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                      <LogoutIcon className="w-4 h-4" />
+                      Déconnexion
+                    </button>
+                  </div>
+                )}
               </div>
-              <button onClick={logout} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                <LogoutIcon className="w-4 h-4" />
-                Quitter
-              </button>
+
               {/* Mobile menu button */}
               <button className="md:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setMobileOpen(!mobileOpen)}>
                 {mobileOpen ? <XMarkIcon className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
@@ -77,6 +106,15 @@ export default function Layout({ children }) {
           <div className="fixed inset-0 bg-black/20 z-30 md:hidden" onClick={() => setMobileOpen(false)} />
           <div className="fixed top-16 left-0 right-0 z-30 bg-white border-b border-gray-200 shadow-lg md:hidden animate-slideUp">
             <nav className="p-4 space-y-1">
+              <div className="flex items-center gap-3 px-3 py-3 border-b border-gray-100 mb-2">
+                <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm">
+                  {user?.name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
+                  <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                </div>
+              </div>
               {navItems.map((item) => {
                 const active = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path))
                 const Icon = item.icon
@@ -95,6 +133,10 @@ export default function Layout({ children }) {
                 )
               })}
               <hr className="my-2 border-gray-100" />
+              <button className="flex items-center gap-3 px-3 py-2.5 w-full text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                <LockIcon className="w-5 h-5 text-gray-400" />
+                Changer mot de passe
+              </button>
               <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 w-full text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                 <LogoutIcon className="w-5 h-5" />
                 Déconnexion

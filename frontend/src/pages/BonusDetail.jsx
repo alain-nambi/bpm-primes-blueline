@@ -113,11 +113,17 @@ const BonusDetail = () => {
     return null;
   };
 
-  const getBadgeClass = (status) => {
-    if (status === 'Prime validée' || status === 'Validé') return 'bg-emerald-100 text-emerald-700';
-    if (status === 'Prime rejetée' || status === 'Rejeté') return 'bg-red-100 text-red-700';
-    return 'bg-amber-100 text-amber-700';
-  };
+    const getBadgeClass = (status) => {
+      const map = {
+        'Initialisé': 'bg-orange-100 text-orange-700',
+        'En attente N+1': 'bg-blue-100 text-blue-700',
+        'En attente Directeur': 'bg-purple-100 text-purple-700',
+        'En attente DG': 'bg-amber-100 text-amber-700',
+        'Prime validée': 'bg-emerald-100 text-emerald-700',
+        'Prime rejetée': 'bg-red-100 text-red-700',
+      };
+      return map[status] || 'bg-gray-100 text-gray-600';
+    };
 
   const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR', {
     day: '2-digit', month: 'long', year: 'numeric',
@@ -238,7 +244,7 @@ const BonusDetail = () => {
             <p className="text-xs text-gray-400">{bonus.employee?.name || 'N/A'}</p>
           </div>
         </div>
-        <span className={`ml-auto text-xs font-medium px-2.5 py-1 rounded-full ${getBadgeClass(bonus.status)}`}>
+        <span className={`ml-auto text-xs font-medium px-2.5 py-1 rounded-full ${getBadgeClass(bonus.status)} ${bonus.was_rejected ? 'ring-1 ring-red-400' : ''}`}>
           {bonus.status}
         </span>
       </div>

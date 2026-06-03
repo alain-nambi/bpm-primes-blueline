@@ -80,9 +80,15 @@ const BonusesList = () => {
   };
 
   const getBadgeClass = (status) => {
-    if (status === 'Prime validée' || status === 'Validé') return 'bg-emerald-100 text-emerald-700';
-    if (status === 'Prime rejetée' || status === 'Rejeté') return 'bg-red-100 text-red-700';
-    return 'bg-amber-100 text-amber-700';
+    const map = {
+      'Initialisé': 'bg-orange-100 text-orange-700',
+      'En attente N+1': 'bg-blue-100 text-blue-700',
+      'En attente Directeur': 'bg-purple-100 text-purple-700',
+      'En attente DG': 'bg-amber-100 text-amber-700',
+      'Prime validée': 'bg-emerald-100 text-emerald-700',
+      'Prime rejetée': 'bg-red-100 text-red-700',
+    };
+    return map[status] || 'bg-gray-100 text-gray-600';
   };
 
   const sections = useMemo(() => {
@@ -227,7 +233,7 @@ const BonusesList = () => {
                             </div>
                             <span className="text-sm font-medium text-gray-900">{typeLabels[bonus.bonus_type] || bonus.bonus_type}</span>
                           </div>
-                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${getBadgeClass(bonus.status)}`}>
+                          <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${getBadgeClass(bonus.status)} ${bonus.was_rejected ? 'ring-1 ring-red-400' : ''}`}>
                             {bonus.status}
                           </span>
                         </div>

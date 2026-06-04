@@ -18,17 +18,18 @@ router = APIRouter(dependencies=[Depends(get_current_user)])
 async def create_bonus(bonus: BonusCreate, user: User = Depends(get_current_user)):
     employee = await Employee.get(id=bonus.employee_id)
 
-    primemax = await PrimeMax.filter(
-        department=employee.department,
-        bonus_type=bonus.bonus_type
-    ).first()
-    if primemax and bonus.total_amount > primemax.amount:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Le montant ({bonus.total_amount} Ar) dépasse le plafond "
-                   f"autorisé ({primemax.amount} Ar) pour "
-                   f"'{bonus.bonus_type.value}' dans le département '{employee.department.value}'."
-        )
+    if bonus.bonus_type != BonusType.ASTREINTE:
+        primemax = await PrimeMax.filter(
+            department=employee.department,
+            bonus_type=bonus.bonus_type
+        ).first()
+        if primemax and bonus.total_amount > primemax.amount:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Le montant ({bonus.total_amount} Ar) dépasse le plafond "
+                       f"autorisé ({primemax.amount} Ar) pour "
+                       f"'{bonus.bonus_type.value}' dans le département '{employee.department.value}'."
+            )
 
     existing = await Bonus.filter(
         employee_id=bonus.employee_id,
@@ -53,7 +54,7 @@ async def update_bonus(bonus_id: int, data: BonusCreate, user: User = Depends(ge
         raise HTTPException(400, "Impossible de modifier une prime dont le statut n'est pas 'Initialisé'")
 
     update_data = data.dict(exclude_unset=True)
-    if 'total_amount' in update_data:
+    if 'total_amount' in update_data and data.bonus_type != BonusType.ASTREINTE:
         employee = await Employee.get(id=bonus.employee_id)
         primemax = await PrimeMax.filter(department=employee.department, bonus_type=bonus.bonus_type).first()
         if primemax and update_data['total_amount'] > primemax.amount:

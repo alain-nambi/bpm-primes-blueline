@@ -106,7 +106,7 @@ async def export_bonuses(
     bonuses = await query.order_by('-start_date')
 
     output = io.StringIO()
-    writer = csv.writer(output)
+    writer = csv.writer(output, delimiter=';')
     writer.writerow([
         "Matricule", "Nom", "Departement", "TypePrime",
         "DateDebut", "DateFin", "Montant", "Statut",
@@ -128,7 +128,7 @@ async def export_bonuses(
 
     output.seek(0)
     return StreamingResponse(
-        iter([output.getvalue()]),
+        iter(['\ufeff' + output.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": f"attachment; filename=export_primes_{datetime.now().strftime('%Y%m%d')}.csv"}
     )
@@ -139,7 +139,7 @@ async def export_sage():
     bonuses = await Bonus.filter(status=ValidationStatus.VALIDE).prefetch_related('employee')
 
     output = io.StringIO()
-    writer = csv.writer(output)
+    writer = csv.writer(output, delimiter=';')
     writer.writerow([
         "Matricule", "Nom", "Departement", "TypePrime",
         "DateDebut", "DateFin", "Montant", "Statut"
@@ -158,7 +158,7 @@ async def export_sage():
 
     output.seek(0)
     return StreamingResponse(
-        iter([output.getvalue()]),
+        iter(['\ufeff' + output.getvalue()]),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=export_sage_paie.csv"}
     )

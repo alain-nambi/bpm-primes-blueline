@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getEmployees, getBonuses, createEmployee, getUsers } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import { PlusIcon, EyeIcon, CalendarIcon, MoonIcon, ChartIcon, ClipboardIcon } from '../components/Icons';
+import { PlusIcon, EyeIcon, CalendarIcon, MoonIcon, ChartIcon, ClipboardIcon, XMarkIcon } from '../components/Icons';
 
 const DEPARTMENTS = [
   'Clientèle', 'Commercial GP', 'Commercial entreprise', 'ADV', 'Fidélisation',
@@ -194,40 +194,48 @@ const Employees = () => {
       </div>
 
       {selectedEmp && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 bg-gray-50 border-b border-gray-100">
-            <div className="flex items-center gap-2">
-              <ClipboardIcon className="w-4 h-4 text-blue-600" />
-              <h3 className="font-semibold text-gray-900 text-sm">Primes de {selectedEmp.name}</h3>
-            </div>
-            <button onClick={() => setSelectedEmp(null)} className="text-xs text-gray-400 hover:text-gray-600">Fermer</button>
-          </div>
-          <div className="p-3">
-            {bonusesLoading ? (
-              <div className="flex justify-center py-8"><span className="loading loading-spinner loading-sm" /></div>
-            ) : !user?.is_dg && !user?.is_drh && selectedEmp.department !== user?.department ? (
-              <p className="text-center text-gray-400 py-6 text-sm">Vous ne pouvez voir que les primes des employés de votre département</p>
-            ) : empBonuses.length === 0 ? (
-              <p className="text-center text-gray-400 py-6 text-sm">Aucune prime pour cet employé</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1.5">
-                {empBonuses.map((bonus) => {
-                  return (
-                    <Link key={bonus.id} to={`/bonuses/${bonus.id}`}
-                      className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all">
-                      <div className="w-4 h-4 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-[8px] font-bold">
-                        {bonus.bonus_type === 'mensuel' ? 'M' : bonus.bonus_type === 'astreinte' ? 'A' : bonus.bonus_type === 'commission' ? 'C' : '?'}
-                      </div>
-                      <span className="text-[10px] text-gray-500 truncate min-w-0 flex-1">{bonus.employee?.name || 'N/A'}</span>
-                      <span className={`text-[9px] font-medium px-1 py-0.5 rounded-full ${getBadgeClass(bonus.status)} ${bonus.was_rejected ? 'ring-1 ring-red-400' : ''}`}>
-                        {bonus.status}
-                      </span>
-                      <span className="text-[10px] font-semibold text-blue-600 shrink-0">{bonus.total_amount} Ar</span>
-                    </Link>
-                  );
-                })}
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh]" onClick={() => setSelectedEmp(null)}>
+          <div className="fixed inset-0 bg-black/40" />
+          <div className="relative bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-lg max-h-[70vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 shrink-0">
+              <div className="flex items-center gap-2">
+                <ClipboardIcon className="w-4 h-4 text-blue-600" />
+                <h3 className="font-semibold text-gray-900 text-sm">Primes de {selectedEmp.name}</h3>
               </div>
-            )}
+              <button onClick={() => setSelectedEmp(null)} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto">
+              {bonusesLoading ? (
+                <div className="flex justify-center py-8"><span className="loading loading-spinner loading-sm" /></div>
+              ) : !user?.is_dg && !user?.is_drh && selectedEmp.department !== user?.department ? (
+                <p className="text-center text-gray-400 py-6 text-sm">Vous ne pouvez voir que les primes des employés de votre département</p>
+              ) : empBonuses.length === 0 ? (
+                <p className="text-center text-gray-400 py-6 text-sm">Aucune prime pour cet employé</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {empBonuses.map((bonus) => {
+                    return (
+                      <Link key={bonus.id} to={`/bonuses/${bonus.id}`}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all">
+                        <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                          {bonus.bonus_type === 'mensuel' ? 'M' : bonus.bonus_type === 'astreinte' ? 'A' : bonus.bonus_type === 'commission' ? 'C' : '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{typeLabels[bonus.bonus_type] || bonus.bonus_type}</p>
+                          <p className="text-[11px] text-gray-400">{bonus.start_date && bonus.end_date ? `${formatDate(bonus.start_date)} → ${formatDate(bonus.end_date)}` : '—'}</p>
+                        </div>
+                        <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${getBadgeClass(bonus.status)} ${bonus.was_rejected ? 'ring-1 ring-red-400' : ''}`}>
+                          {bonus.status}
+                        </span>
+                        <span className="text-xs font-semibold text-blue-600 shrink-0">{bonus.total_amount} Ar</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

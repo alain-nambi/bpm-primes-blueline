@@ -19,8 +19,9 @@ const typeLabels = {
 
 const BonusesList = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [bonuses, setBonuses] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [viewMode, setViewMode] = useState('status');
   const [typeFilter, setTypeFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [monthFilter, setMonthFilter] = useState('');
@@ -142,6 +143,20 @@ const BonusesList = () => {
     return result;
   }, [filteredBonuses, sections]);
 
+  const monthGroups = useMemo(() => {
+    const groups = {}
+    filteredBonuses.forEach(b => {
+      const ym = b.start_date ? b.start_date.slice(0, 7) : 'inconnu'
+      if (!groups[ym]) groups[ym] = []
+      groups[ym].push(b)
+    })
+    return Object.keys(groups).sort().reverse().map(ym => {
+      const [y, m] = ym.split('-')
+      const monthName = new Date(parseInt(y), parseInt(m) - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+      return { ym, monthName, bonuses: groups[ym] }
+    })
+  }, [filteredBonuses]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -195,9 +210,19 @@ const BonusesList = () => {
             Réinitialiser
           </button>
         )}
+        <div className="ml-auto flex gap-1">
+          <button onClick={() => setViewMode('status')}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'status' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+            Statut
+          </button>
+          <button onClick={() => setViewMode('date')}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${viewMode === 'date' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
+            Date
+          </button>
+        </div>
       </div>
 
-      {sections.map((section) => {
+      {viewMode === 'status' ? sections.map((section) => {
         const items = grouped[section.key] || [];
         if (items.length === 0 && section.key !== 'myValidation') return null;
 
@@ -263,7 +288,52 @@ const BonusesList = () => {
             )}
           </div>
         );
-      })}
+      }) : monthGroups.map(({ ym, monthName, bonuses: items }) => (
+        <div key={ym} className="mb-6">
+          <div className="flex items-center gap-2 px-4 py-3 rounded-t-xl bg-gray-100 text-gray-900">
+            <h2 className="font-semibold text-sm">{monthName}</h2>
+            <span className="ml-auto text-xs font-bold px-2.5 py-0.5 rounded-full bg-gray-300 text-gray-700">{items.length}</span>
+          </div>
+          <div className="p-3 bg-white rounded-b-xl border border-t-0 border-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+              {items.map((bonus) => {
+                const step = getValidStep(bonus)
+                return (
+                  <Link key={bonus.id} to={`/bonuses/${bonus.id}`}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all group">
+                    <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                      {bonus.bonus_type === 'mensuel' ? 'M' : bonus.bonus_type === 'astreinte' ? 'A' : bonus.bonus_type === 'commission' ? 'C' : '?'}
+                    </div>
+                    <span className="text-[11px] text-gray-900 truncate min-w-0 flex-1">
+                      <span className="font-medium">{bonus.employee?.name || 'N/A'}</span>
+                    </span>
+                    <span className={`text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 ${getBadgeClass(bonus.status)} ${bonus.was_rejected ? 'ring-1 ring-red-400' : ''}`}>
+                      {bonus.status}
+                    </span>
+                    <span className="text-[10px] font-semibold text-blue-600 shrink-0">{bonus.total_amount} Ar</span>
+                    <div className="flex gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => navigate(`/bonuses/${bonus.id}`)} className="p-1 rounded hover:bg-gray-100 text-gray-300 hover:text-blue-600" title="Voir le détail">
+                        <EyeIcon className="w-3 h-3" />
+                      </button>
+                      {step && !bonus.was_rejected && (
+                        <button className="p-1 rounded hover:bg-emerald-50 text-gray-300 hover:text-emerald-600"
+                          onClick={() => handleValidate(bonus.id, step)} title="Valider">
+                          <CheckIcon className="w-3 h-3" />
+                        </button>
+                      )}
+                      {step && bonus.was_rejected && (
+                        <button onClick={() => navigate(`/bonuses/edit/${bonus.id}`)} className="p-1 rounded hover:bg-amber-50 text-gray-300 hover:text-amber-600" title="Modifier">
+                          <EditIcon className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      ))}
 
       <Modal open={!!confirmBonus} onClose={() => setConfirmBonus(null)} title="Confirmer la validation" size="sm">
         <p className="text-sm text-gray-600 mb-6">Êtes-vous sûr de vouloir valider cette prime ?</p>

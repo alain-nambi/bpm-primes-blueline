@@ -54,6 +54,10 @@ const Employees = () => {
   const [bonusStatusFilter, setBonusStatusFilter] = useState('');
 
   useEffect(() => {
+    if (user?.department && !departmentFilter) setDepartmentFilter(user.department);
+  }, [user?.department]);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const [emps, users] = await Promise.all([

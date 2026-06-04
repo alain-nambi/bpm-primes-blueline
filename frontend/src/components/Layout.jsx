@@ -10,6 +10,18 @@ const navItems = [
   { path: '/settings/primemax', label: 'Plafonds', icon: SettingsIcon },
 ]
 
+function userRole(user) {
+  if (user?.is_dg) return 'DG'
+  if (user?.is_drh) return 'DRH'
+  if (user?.is_directeur) return 'Directeur'
+  if (user?.is_validator_n1) return 'Validateur N+1'
+  return 'Collaborateur'
+}
+
+function userDept(user) {
+  return user?.department || '—'
+}
+
 export default function Layout({ children }) {
   const { user, logout } = useAuth()
   const { pathname } = useLocation()
@@ -68,6 +80,7 @@ export default function Layout({ children }) {
                   <div className="text-left text-sm leading-tight">
                     <p className="font-medium text-gray-900">{user?.name || 'User'}</p>
                     <p className="text-[11px] text-gray-400">{user?.email}</p>
+                    <p className="text-[10px] text-gray-400">{userDept(user)} · {userRole(user)}</p>
                   </div>
                   <ChevronDownIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
                 </button>
@@ -77,6 +90,7 @@ export default function Layout({ children }) {
                     <div className="px-4 py-2.5 border-b border-gray-100">
                       <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
                       <p className="text-xs text-gray-400 truncate mt-0.5">{user?.email}</p>
+                      <p className="text-[11px] text-gray-400 truncate mt-0.5">{userDept(user)} · {userRole(user)}</p>
                     </div>
                     <button className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
                       <LockIcon className="w-4 h-4 text-gray-400" />
@@ -113,6 +127,7 @@ export default function Layout({ children }) {
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'User'}</p>
                   <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                  <p className="text-[10px] text-gray-400 truncate">{userDept(user)} · {userRole(user)}</p>
                 </div>
               </div>
               {navItems.map((item) => {

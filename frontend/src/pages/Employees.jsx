@@ -49,7 +49,7 @@ const Employees = () => {
   const [empBonuses, setEmpBonuses] = useState([]);
   const [bonusesLoading, setBonusesLoading] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState('');
-  const [bonusSearch, setBonusSearch] = useState('');
+  const [bonusTypeFilter, setBonusTypeFilter] = useState('');
   const [bonusMonthFilter, setBonusMonthFilter] = useState('');
   const [bonusStatusFilter, setBonusStatusFilter] = useState('');
 
@@ -90,7 +90,7 @@ const Employees = () => {
 
   const loadEmployeeBonuses = async (emp) => {
     setSelectedEmp(emp);
-    setBonusSearch('');
+    setBonusTypeFilter('');
     setBonusMonthFilter('');
     setBonusStatusFilter('');
     if (!user?.is_dg && !user?.is_drh && user?.department && emp.department !== user.department) {
@@ -117,9 +117,28 @@ const Employees = () => {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Employés</h1>
+        <div className="flex items-center gap-2">
         <button onClick={() => setShowForm(true)} className="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm flex items-center gap-1.5">
           <PlusIcon className="w-4 h-4" /> Nouvel employé
         </button>
+        <button onClick={() => {
+          const p = new URLSearchParams()
+          if (departmentFilter) p.set('department', departmentFilter)
+          const token = localStorage.getItem('token')
+          fetch(`/api/v1/employees/export?${p.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.blob())
+            .then(blob => {
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `export_employes_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`
+              a.click()
+              URL.revokeObjectURL(url)
+            })
+        }} className="btn bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 btn-sm flex items-center gap-1.5" title="Exporter les employés">
+          <DownloadIcon className="w-4 h-4" /> Exporter
+        </button>
+        </div>
       </div>
 
       {showForm && (
@@ -215,7 +234,7 @@ const Employees = () => {
               <div className="flex items-center gap-1">
                 <button onClick={() => {
                   const p = new URLSearchParams({ employee_id: selectedEmp.id })
-                  if (bonusSearch) p.set('search', bonusSearch)
+                  if (bonusTypeFilter) p.set('bonus_type', bonusTypeFilter)
                   if (bonusStatusFilter) p.set('status', bonusStatusFilter)
                   if (bonusMonthFilter) {
                     const [y, m] = bonusMonthFilter.split('-')
@@ -245,9 +264,13 @@ const Employees = () => {
             <>
               {!bonusesLoading && empBonuses.length > 0 && (
                 <div className="px-4 pt-3 pb-2.5 border-b border-gray-100 space-y-2 shrink-0">
-                  <input type="text" value={bonusSearch} onChange={(e) => setBonusSearch(e.target.value)}
-                    placeholder="Rechercher..."
-                    className="w-full px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+                  <select value={bonusTypeFilter} onChange={(e) => setBonusTypeFilter(e.target.value)}
+                    className="w-full px-2 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
+                    <option value="">Tous les types</option>
+                    <option value="mensuel">Mensuelle</option>
+                    <option value="astreinte">Astreinte</option>
+                    <option value="commission">Commission</option>
+                  </select>
                   <div className="flex gap-2">
                     <input type="month" value={bonusMonthFilter} onChange={(e) => setBonusMonthFilter(e.target.value)}
                       className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
@@ -273,9 +296,8 @@ const Employees = () => {
                   <p className="text-center text-gray-400 py-6 text-sm">Aucune prime pour cet employé</p>
                 ) : (
                   (() => {
-                    const q = bonusSearch.toLowerCase()
                     const filtered = empBonuses.filter(b => {
-                      if (q && !(typeLabels[b.bonus_type] || b.bonus_type).toLowerCase().includes(q) && !b.status.toLowerCase().includes(q)) return false
+                      if (bonusTypeFilter && b.bonus_type !== bonusTypeFilter) return false
                       if (bonusMonthFilter) {
                         const ym = b.start_date ? b.start_date.slice(0, 7) : ''
                         if (ym !== bonusMonthFilter) return false

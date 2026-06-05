@@ -9,6 +9,7 @@ from fastapi import HTTPException
 import io
 import csv
 from datetime import datetime
+from tortoise.expressions import Q
 
 # Création du routeur API
 router = APIRouter(dependencies=[Depends(get_current_user)])
@@ -94,14 +95,23 @@ async def export_bonuses(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
     department: Optional[str] = None,
+    search: Optional[str] = None,
 ):
     query = Bonus.all().prefetch_related('employee', 'created_by')
     if status: query = query.filter(status=status)
     if employee_id: query = query.filter(employee_id=employee_id)
     if bonus_type: query = query.filter(bonus_type=bonus_type)
-    if start_date: query = query.filter(start_date__gte=start_date)
-    if end_date: query = query.filter(end_date__lte=end_date)
+    if start_date and end_date:
+        query = query.filter(start_date__lte=end_date, end_date__gte=start_date)
+    elif start_date:
+        query = query.filter(start_date__gte=start_date)
+    elif end_date:
+        query = query.filter(end_date__lte=end_date)
     if department: query = query.filter(employee__department=department)
+    if search:
+        query = query.filter(
+            Q(employee__name__icontains=search) | Q(employee__matricule__icontains=search)
+        )
 
     bonuses = await query.order_by('-start_date')
 

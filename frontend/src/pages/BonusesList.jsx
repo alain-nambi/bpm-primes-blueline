@@ -160,6 +160,7 @@ const BonusesList = () => {
   const exportUrl = useMemo(() => {
     const p = new URLSearchParams()
     if (typeFilter) p.set('bonus_type', typeFilter)
+    if (searchQuery) p.set('search', searchQuery)
     if (monthFilter) {
       const [y, m] = monthFilter.split('-')
       const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate()
@@ -168,7 +169,7 @@ const BonusesList = () => {
     }
     const qs = p.toString()
     return `/api/v1/bonuses/export${qs ? '?' + qs : ''}`
-  }, [typeFilter, monthFilter])
+  }, [typeFilter, searchQuery, monthFilter])
 
   if (loading) {
     return (

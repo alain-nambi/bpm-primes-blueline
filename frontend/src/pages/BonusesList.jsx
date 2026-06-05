@@ -135,7 +135,7 @@ const BonusesList = () => {
       }
       return true;
     });
-  }, [bonuses, typeFilter, searchQuery, monthFilter]);
+  }, [bonuses, typeFilter, statusFilter, searchQuery, monthFilter]);
 
   const grouped = useMemo(() => {
     const result = {};

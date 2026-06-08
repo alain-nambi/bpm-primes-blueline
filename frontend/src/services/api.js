@@ -93,6 +93,11 @@ export const validateBonus = async (bonusId, validationData, step) => {
   return data;
 };
 
+export const batchValidateBonuses = async (bonusIds, action, step, motif_rejet = null) => {
+  const { data } = await api.post('/bonuses/batch/validate', { bonus_ids: bonusIds, action, step, motif_rejet });
+  return data;
+};
+
 export const getPrimeMax = async (department = null, bonusType = null) => {
   const params = {};
   if (department) params.department = department;

@@ -111,6 +111,24 @@ class ValidationCreate(BaseModel):
     note: Optional[str] = None
     motif_rejet: Optional[str] = None
 
+# Schéma pour validation par lot
+class BatchValidateRequest(BaseModel):
+    bonus_ids: List[int]
+    action: str
+    step: str
+    note: Optional[str] = None
+    motif_rejet: Optional[str] = None
+
+class BatchValidateResult(BaseModel):
+    bonus_id: int
+    success: bool
+    error: Optional[str] = None
+
+class BatchValidateResponse(BaseModel):
+    results: List[BatchValidateResult]
+    total_success: int
+    total_errors: int
+
 # Schéma de réponse validation
 class ValidationResponse(BaseModel):
     id: int

@@ -48,6 +48,79 @@ async def create_bonus(bonus: BonusCreate, user: User = Depends(get_current_user
     obj = await Bonus.create(**bonus.dict(), created_by_id=user.id, status=initial_status)
     return await Bonus.get(id=obj.id).prefetch_related('employee')
 
+# Route POST pour validation par lot
+@router.post("/bonuses/batch/validate", response_model=BatchValidateResponse)
+async def batch_validate_bonuses(
+    request: BatchValidateRequest,
+    user: User = Depends(get_current_user)
+):
+    results = []
+    for bonus_id in request.bonus_ids:
+        try:
+            bonus = await Bonus.get_or_none(id=bonus_id)
+            if not bonus:
+                results.append(BatchValidateResult(bonus_id=bonus_id, success=False, error="Prime introuvable"))
+                continue
+
+            if bonus.status == ValidationStatus.VALIDE:
+                results.append(BatchValidateResult(bonus_id=bonus_id, success=False, error="Déjà validée"))
+                continue
+
+            expected_status = {
+                "N1": ValidationStatus.INITIALISE,
+                "DIRECTEUR": ValidationStatus.EN_ATTENTE_DIRECTEUR,
+                "DG": ValidationStatus.EN_ATTENTE_DG,
+            }.get(request.step)
+
+            if not expected_status:
+                results.append(BatchValidateResult(bonus_id=bonus_id, success=False, error="Étape invalide"))
+                continue
+
+            if bonus.status != expected_status:
+                results.append(BatchValidateResult(
+                    bonus_id=bonus_id, success=False,
+                    error=f"Statut actuel '{bonus.status}', attendait '{expected_status}'"
+                ))
+                continue
+
+            await Validation.create(
+                bonus_id=bonus.id,
+                validator_id=user.id,
+                step=request.step,
+                action=request.action,
+                note=request.note,
+                motif_rejet=request.motif_rejet,
+            )
+
+            if request.action == "VALIDER":
+                bonus.status = {
+                    "N1": ValidationStatus.EN_ATTENTE_DIRECTEUR,
+                    "DIRECTEUR": ValidationStatus.EN_ATTENTE_DG,
+                    "DG": ValidationStatus.VALIDE
+                }[request.step]
+
+                if bonus.status == ValidationStatus.VALIDE:
+                    await Validation.create(
+                        bonus_id=bonus.id,
+                        validator_id=user.id,
+                        step="CLOSED",
+                        action="AUTOMATIC",
+                        note="Prime validée par DG - Clôture automatique"
+                    )
+            elif request.action == "REJETER":
+                bonus.status = ValidationStatus.INITIALISE
+                bonus.was_rejected = True
+
+            await bonus.save()
+            results.append(BatchValidateResult(bonus_id=bonus_id, success=True))
+
+        except Exception as e:
+            results.append(BatchValidateResult(bonus_id=bonus_id, success=False, error=str(e)))
+
+    total_success = sum(1 for r in results if r.success)
+    total_errors = len(results) - total_success
+    return BatchValidateResponse(results=results, total_success=total_success, total_errors=total_errors)
+
 # Route PUT pour modifier une prime (seulement si statut = Initialisé)
 @router.put("/bonuses/{bonus_id}", response_model=BonusResponse)
 async def update_bonus(bonus_id: int, data: BonusCreate, user: User = Depends(get_current_user)):

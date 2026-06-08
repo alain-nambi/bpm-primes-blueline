@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
-import { getBonuses, validateBonus } from '../services/api';
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import { getBonuses, validateBonus, batchValidateBonuses } from '../services/api';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { EyeIcon, CheckIcon, EditIcon, DownloadIcon, CalendarIcon, MoonIcon, ChartIcon, FilterIcon } from '../components/Icons';
@@ -45,6 +45,8 @@ const BonusesList = () => {
   const [confirmBonus, setConfirmBonus] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportColumns, setExportColumns] = useState(EXPORT_COLUMNS_LIST);
+  const [selectedBonuses, setSelectedBonuses] = useState(new Set());
+  const [batchReject, setBatchReject] = useState(null);
 
   const showToast = (type, message) => {
     setToast({ type, message });
@@ -80,6 +82,38 @@ const BonusesList = () => {
     } catch (error) {
       showToast('error', error.response?.data?.detail || "Erreur lors de la validation");
       setConfirmBonus(null);
+    }
+  };
+
+  const confirmBatchValidate = async () => {
+    const step = getCommonStep();
+    if (!step) return;
+    const ids = [...selectedBonuses];
+    try {
+      const res = await batchValidateBonuses(ids, 'VALIDER', step);
+      showToast('success', `${res.total_success} prime(s) validée(s)${res.total_errors > 0 ? `, ${res.total_errors} erreur(s)` : ''}`);
+      clearSelection();
+      setConfirmBonus(null);
+      fetchBonuses();
+    } catch (error) {
+      showToast('error', error.response?.data?.detail || "Erreur lors de la validation par lot");
+      setConfirmBonus(null);
+    }
+  };
+
+  const confirmBatchReject = async () => {
+    const step = getCommonStep();
+    if (!step) return;
+    const ids = [...selectedBonuses];
+    try {
+      const res = await batchValidateBonuses(ids, 'REJETER', step, batchReject);
+      showToast('success', `${res.total_success} prime(s) rejetée(s)${res.total_errors > 0 ? `, ${res.total_errors} erreur(s)` : ''}`);
+      clearSelection();
+      setBatchReject(null);
+      fetchBonuses();
+    } catch (error) {
+      showToast('error', error.response?.data?.detail || "Erreur lors du rejet par lot");
+      setBatchReject(null);
     }
   };
 
@@ -175,6 +209,31 @@ const BonusesList = () => {
       return { ym, monthName, bonuses: groups[ym] }
     })
   }, [filteredBonuses]);
+
+  const toggleSelect = (id) => {
+    setSelectedBonuses(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAllFiltered = () => {
+    const ids = filteredBonuses.map(b => b.id);
+    setSelectedBonuses(new Set(ids));
+  };
+
+  const clearSelection = () => setSelectedBonuses(new Set());
+
+  const getCommonStep = useCallback(() => {
+    const ids = [...selectedBonuses];
+    if (ids.length === 0) return null;
+    const bonusesInView = filteredBonuses.filter(b => ids.includes(b.id));
+    if (bonusesInView.length === 0) return null;
+    const steps = bonusesInView.map(b => getValidStep(b)).filter(Boolean);
+    const unique = [...new Set(steps)];
+    return unique.length === 1 ? unique[0] : null;
+  }, [selectedBonuses, filteredBonuses]);
 
   if (loading) {
     return (
@@ -299,14 +358,22 @@ const BonusesList = () => {
               <div className="p-3 bg-white rounded-b-xl border border-t-0 border-gray-200">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                   {items.map((bonus) => {
-                    const Icon = typeIcons[bonus.bonus_type] || CalendarIcon
                     const step = getValidStep(bonus)
+                    const selected = selectedBonuses.has(bonus.id)
                     return (
-                      <Link
+                      <div
                         key={bonus.id}
-                        to={`/bonuses/${bonus.id}`}
-                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all group"
+                        onClick={() => navigate(`/bonuses/${bonus.id}`)}
+                        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all group ${
+                          selected
+                            ? 'border-blue-300 bg-blue-50/40 ring-1 ring-blue-300'
+                            : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm'
+                        }`}
                       >
+                        <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                          <input type="checkbox" checked={selected} onChange={() => toggleSelect(bonus.id)}
+                            className="checkbox checkbox-xs rounded border-gray-300 checked:bg-blue-600 checked:border-blue-600" />
+                        </div>
                         <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-[10px] font-bold">
                           {bonus.bonus_type === 'mensuel' ? 'M' : bonus.bonus_type === 'astreinte' ? 'A' : bonus.bonus_type === 'commission' ? 'C' : '?'}
                         </div>
@@ -336,7 +403,7 @@ const BonusesList = () => {
                             </button>
                           )}
                         </div>
-                      </Link>
+                      </div>
                     )
                   })}
                 </div>
@@ -354,9 +421,18 @@ const BonusesList = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               {items.map((bonus) => {
                 const step = getValidStep(bonus)
+                const selected = selectedBonuses.has(bonus.id)
                 return (
-                  <Link key={bonus.id} to={`/bonuses/${bonus.id}`}
-                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all group">
+                  <div key={bonus.id} onClick={() => navigate(`/bonuses/${bonus.id}`)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all group ${
+                      selected
+                        ? 'border-blue-300 bg-blue-50/40 ring-1 ring-blue-300'
+                        : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm'
+                    }`}>
+                    <div onClick={(e) => e.stopPropagation()} className="shrink-0">
+                      <input type="checkbox" checked={selected} onChange={() => toggleSelect(bonus.id)}
+                        className="checkbox checkbox-xs rounded border-gray-300 checked:bg-blue-600 checked:border-blue-600" />
+                    </div>
                     <div className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-[10px] font-bold">
                       {bonus.bonus_type === 'mensuel' ? 'M' : bonus.bonus_type === 'astreinte' ? 'A' : bonus.bonus_type === 'commission' ? 'C' : '?'}
                     </div>
@@ -383,7 +459,7 @@ const BonusesList = () => {
                         </button>
                       )}
                     </div>
-                  </Link>
+                  </div>
                 )
               })}
             </div>
@@ -391,11 +467,59 @@ const BonusesList = () => {
         </div>
       ))}
 
-      <Modal open={!!confirmBonus} onClose={() => setConfirmBonus(null)} title="Confirmer la validation" size="sm">
-        <p className="text-sm text-gray-600 mb-6">Êtes-vous sûr de vouloir valider cette prime ?</p>
+      {selectedBonuses.size > 0 && (
+        <div className="sticky bottom-4 z-40 flex items-center justify-between gap-3 px-4 py-3 bg-white rounded-xl border border-gray-200 shadow-lg">
+          <span className="text-sm font-medium text-gray-700">{selectedBonuses.size} sélectionnée(s)</span>
+          <div className="flex items-center gap-2">
+            <button onClick={selectAllFiltered} className="btn btn-ghost btn-xs">Tout</button>
+            <button onClick={clearSelection} className="btn btn-ghost btn-xs text-gray-400">Aucun</button>
+            <div className="w-px h-5 bg-gray-200" />
+            {(() => {
+              const step = getCommonStep()
+              return step ? (
+                <>
+                  <button onClick={() => setConfirmBonus({ batch: true })}
+                    className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-0">Valider ({selectedBonuses.size})</button>
+                  <button onClick={() => setBatchReject('')}
+                    className="btn btn-sm bg-red-50 hover:bg-red-100 text-red-700 border border-red-200">Rejeter</button>
+                </>
+              ) : (
+                <span className="text-xs text-gray-400 italic" title="Les primes sélectionnées n'ont pas le même statut ou ne peuvent pas être validées ensemble">Étapes différentes</span>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+
+      <Modal open={!!confirmBonus} onClose={() => { setConfirmBonus(null); clearSelection(); }} title="Confirmer la validation" size="sm">
+        {confirmBonus?.batch ? (
+          <>
+            <p className="text-sm text-gray-600 mb-6">Valider les <strong>{selectedBonuses.size}</strong> prime(s) sélectionnée(s) ?</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => { setConfirmBonus(null); }} className="btn btn-sm btn-ghost">Annuler</button>
+              <button onClick={confirmBatchValidate} className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-0">Valider tout</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-gray-600 mb-6">Êtes-vous sûr de vouloir valider cette prime ?</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setConfirmBonus(null)} className="btn btn-sm btn-ghost">Annuler</button>
+              <button onClick={confirmValidate} className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-0">Valider</button>
+            </div>
+          </>
+        )}
+      </Modal>
+
+      <Modal open={batchReject !== null} onClose={() => setBatchReject(null)} title="Rejeter les primes" size="sm">
+        <p className="text-sm text-gray-600 mb-3">Rejeter les <strong>{selectedBonuses.size}</strong> prime(s) sélectionnée(s) ?</p>
+        <textarea value={batchReject || ''} onChange={(e) => setBatchReject(e.target.value)}
+          placeholder="Motif du rejet (optionnel)..."
+          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-red-500/30 focus:border-red-400 mb-4 resize-none"
+          rows={3} />
         <div className="flex gap-2 justify-end">
-          <button onClick={() => setConfirmBonus(null)} className="btn btn-sm btn-ghost">Annuler</button>
-          <button onClick={confirmValidate} className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-0">Valider</button>
+          <button onClick={() => setBatchReject(null)} className="btn btn-sm btn-ghost">Annuler</button>
+          <button onClick={confirmBatchReject} className="btn btn-sm bg-red-600 hover:bg-red-700 text-white border-0">Rejeter tout</button>
         </div>
       </Modal>
       <Modal open={showExportModal} onClose={() => setShowExportModal(false)} title="Exporter les primes" size="md">

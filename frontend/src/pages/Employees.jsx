@@ -70,7 +70,7 @@ const Employees = () => {
 
   useEffect(() => {
     if (user?.department && !departmentFilter) setDepartmentFilter(user.department);
-  }, [user?.department]);
+  }, [user?.department, departmentFilter]);
 
   useEffect(() => {
     const fetchData = async () => {

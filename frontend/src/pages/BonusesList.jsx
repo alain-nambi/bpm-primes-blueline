@@ -51,10 +51,6 @@ const BonusesList = () => {
     setTimeout(() => setToast(null), 3000);
   };
 
-  useEffect(() => {
-    fetchBonuses();
-  }, []);
-
   const fetchBonuses = async () => {
     try {
       const data = await getBonuses();
@@ -65,6 +61,10 @@ const BonusesList = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchBonuses();
+  }, []);
 
   const handleValidate = async (bonusId, step) => {
     setConfirmBonus({ bonusId, step });

@@ -6,7 +6,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!token);
 
   useEffect(() => {
     if (token) {
@@ -14,8 +14,6 @@ export function AuthProvider({ children }) {
         .then(setUser)
         .catch(() => { localStorage.removeItem('token'); setToken(null); })
         .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
     }
   }, [token]);
 

@@ -28,7 +28,19 @@ const PlafondsPage = () => {
     }
   };
 
-  useEffect(() => { fetchPlafonds(); }, []);
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getPrimeMax();
+        setPlafonds(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const canEdit = (p) => p.department === user?.department;
 

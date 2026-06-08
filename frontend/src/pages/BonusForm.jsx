@@ -113,6 +113,11 @@ export default function BonusForm() {
     saveAsDefault: false, customize: false,
   })
 
+  const [showAddQuanti, setShowAddQuanti] = useState(false)
+  const [showAddQuali, setShowAddQuali] = useState(false)
+  const [customMode, setCustomMode] = useState(null)
+  const [customCriteria, setCustomCriteria] = useState('')
+
   useEffect(() => {
     getEmployees().then(all => {
       if (connectedUser?.is_dg || connectedUser?.is_drh) {
@@ -197,11 +202,6 @@ export default function BonusForm() {
   const addEvalItem = (list, setter, criteria, section) => {
     setter([...list, { criteria, description: '', objective: '0%', evaluation: 0, value: 0 }])
   }
-
-  const [showAddQuanti, setShowAddQuanti] = useState(false)
-  const [showAddQuali, setShowAddQuali] = useState(false)
-  const [customMode, setCustomMode] = useState(null) // 'quanti' | 'quali' | null
-  const [customCriteria, setCustomCriteria] = useState('')
 
   const handleConfigChange = (field, value) => {
     setAstreinteConfig({ ...astreinteConfig, [field]: value })

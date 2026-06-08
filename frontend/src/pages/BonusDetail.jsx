@@ -557,30 +557,62 @@ const BonusDetail = () => {
           <button onClick={confirmValidate} className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-0">Valider</button>
         </div>
       </Modal>
-      <Modal open={showExportModal} onClose={() => setShowExportModal(false)} title="Exporter la prime — choisir les colonnes" size="lg">
-        <div className="space-y-3">
-          <p className="text-sm text-gray-500">Sélectionnez les colonnes à inclure dans l'export :</p>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-            {EXPORT_COLUMNS.common.map(col => (
-              <label key={col} className="flex items-center gap-2 py-1 cursor-pointer">
-                <input type="checkbox" checked={exportColumns.includes(col)} onChange={() => {
-                  setExportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col])
-                }} className="checkbox checkbox-sm rounded border-gray-300 checked:bg-blue-600 checked:border-blue-600" />
-                <span className="text-sm text-gray-700">{col}</span>
-              </label>
-            ))}
-            <div className="col-span-2 border-t border-gray-100 my-1" />
-            {(EXPORT_COLUMNS[bonus?.bonus_type] || []).map(col => (
-              <label key={col} className="flex items-center gap-2 py-1 cursor-pointer">
-                <input type="checkbox" checked={exportColumns.includes(col)} onChange={() => {
-                  setExportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col])
-                }} className="checkbox checkbox-sm rounded border-gray-300 checked:bg-blue-600 checked:border-blue-600" />
-                <span className="text-sm font-medium text-gray-700">{col}</span>
-              </label>
-            ))}
+      <Modal open={showExportModal} onClose={() => setShowExportModal(false)} title="Exporter la prime" size="lg">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Colonnes à inclure :</p>
+            <div className="flex gap-3">
+              <button onClick={() => {
+                const all = [...EXPORT_COLUMNS.common, ...(EXPORT_COLUMNS[bonus?.bonus_type] || [])]
+                setExportColumns(all)
+              }} className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">Tout</button>
+              <button onClick={() => setExportColumns([])} className="text-xs text-gray-400 hover:text-gray-600 font-medium transition-colors">Aucun</button>
+            </div>
           </div>
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-            <span className="text-xs text-gray-400">{exportColumns.length} colonne(s) sélectionnée(s)</span>
+          <div className="space-y-1">
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1">Commun</p>
+            <div className="grid grid-cols-2 gap-2">
+              {EXPORT_COLUMNS.common.map(col => {
+                const selected = exportColumns.includes(col)
+                return (
+                  <label key={col} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all ${
+                    selected ? 'border-blue-300 bg-blue-50/60 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                  }`}>
+                    <input type="checkbox" checked={selected} onChange={() => {
+                      setExportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col])
+                    }} className="checkbox checkbox-sm rounded border-gray-300 checked:bg-blue-600 checked:border-blue-600" />
+                    <span className={`text-sm ${selected ? 'text-blue-700 font-medium' : 'text-gray-700'}`}>{col}</span>
+                  </label>
+                )
+              })}
+            </div>
+          </div>
+          {(EXPORT_COLUMNS[bonus?.bonus_type] || []).length > 0 && (
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider px-1">
+                {bonus?.bonus_type === 'mensuel' ? 'Mensuel' : bonus?.bonus_type === 'astreinte' ? 'Astreinte' : 'Commission'}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {EXPORT_COLUMNS[bonus?.bonus_type].map(col => {
+                  const selected = exportColumns.includes(col)
+                  return (
+                    <label key={col} className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border cursor-pointer transition-all ${
+                      selected ? 'border-blue-300 bg-blue-50/60 shadow-sm' : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                    }`}>
+                      <input type="checkbox" checked={selected} onChange={() => {
+                        setExportColumns(prev => prev.includes(col) ? prev.filter(c => c !== col) : [...prev, col])
+                      }} className="checkbox checkbox-sm rounded border-gray-300 checked:bg-blue-600 checked:border-blue-600" />
+                      <span className={`text-sm ${selected ? 'text-blue-700 font-medium' : 'text-gray-700'}`}>{col}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
+              {exportColumns.length} / {EXPORT_COLUMNS.common.length + (EXPORT_COLUMNS[bonus?.bonus_type] || []).length}
+            </span>
             <div className="flex gap-2">
               <button onClick={() => setShowExportModal(false)} className="btn btn-sm btn-ghost">Annuler</button>
               <button onClick={() => {

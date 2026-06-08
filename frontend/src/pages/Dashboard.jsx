@@ -109,11 +109,12 @@ const Dashboard = () => {
           { icon: ClipboardIcon, label: 'Total Primes', value: stats.total, sub: formatAmount(stats.totalAmount), bg: 'bg-blue-50', text: 'text-blue-600' },
           { icon: ClockIcon, label: 'En attente', value: stats.pending, sub: 'Non validées', bg: 'bg-amber-50', text: 'text-amber-600' },
           { icon: CheckIcon, label: 'Validées', value: stats.validated, sub: 'Approuvées', bg: 'bg-emerald-50', text: 'text-emerald-600' },
-          { icon: EmployeesIcon, label: `Employés (${user?.department || 'tous'})`, value: stats.employees, sub: 'Actifs', bg: 'bg-violet-50', text: 'text-violet-600' },
+          { icon: EmployeesIcon, label: `Employés (${user?.department || 'tous'})`, value: stats.employees, sub: 'Actifs', bg: 'bg-violet-50', text: 'text-violet-600', to: '/employees' },
         ].map((card, i) => {
           const Icon = card.icon;
+          const Tag = card.to ? Link : 'div';
           return (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4">
+            <Tag key={i} to={card.to} className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 cursor-pointer hover:border-violet-300 hover:shadow-sm transition-all">
               <div className={`w-12 h-12 rounded-xl ${card.bg} ${card.text} flex items-center justify-center shrink-0`}>
                 <Icon className="w-6 h-6" />
               </div>
@@ -122,7 +123,7 @@ const Dashboard = () => {
                 <p className="text-2xl font-bold text-gray-900 mt-0.5">{card.value}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{card.sub}</p>
               </div>
-            </div>
+            </Tag>
           );
         })}
       </div>

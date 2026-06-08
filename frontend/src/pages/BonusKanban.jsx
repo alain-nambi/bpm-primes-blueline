@@ -61,7 +61,7 @@ const BonusKanban = () => {
     <div>
       <div className="flex items-center gap-3 mb-6">
         <Link to="/" className="p-2 rounded-lg hover:bg-gray-100"><ArrowLeftIcon className="w-5 h-5 text-gray-500" /></Link>
-        <h1 className="text-2xl font-bold text-gray-900">Kanban {typeLabels[type] || type}</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{typeLabels[type] || type}</h1>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {columns.map(col => (

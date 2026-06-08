@@ -188,7 +188,7 @@ async def export_bonus_detail(bonus_id: int, columns: Optional[str] = None):
     ]
     type_cols = {
         'mensuel': ["Score", "Quantitatif", "Qualitatif"],
-        'astreinte': ["Semaines", "PrimeMaxSemaine", "TauxIntervention", "TotalDisponibilite", "TotalInterventions", "Exceptionnelle", "Ponctuelle"],
+        'astreinte': ["Semaines", "TotalDisponibilite", "TotalInterventions", "Exceptionnelle", "Ponctuelle"],
         'commission': ["CommissionParVente"],
     }
     all_possible = common + type_cols.get(bonus.bonus_type.value, [])

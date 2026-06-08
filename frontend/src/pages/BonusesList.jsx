@@ -17,6 +17,13 @@ const typeLabels = {
   commission: 'Commission',
 }
 
+const MONTHS = [
+  'Janvier','Février','Mars','Avril','Mai','Juin',
+  'Juillet','Août','Septembre','Octobre','Novembre','Décembre',
+];
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({length: 5}, (_, i) => currentYear - 2 + i);
+
 const BonusesList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -25,7 +32,8 @@ const BonusesList = () => {
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [monthFilter, setMonthFilter] = useState('');
+  const [filterMonth, setFilterMonth] = useState('');
+  const [filterYear, setFilterYear] = useState('');
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
   const [confirmBonus, setConfirmBonus] = useState(null);
@@ -128,14 +136,15 @@ const BonusesList = () => {
         const mat = b.employee?.matricule?.toLowerCase() || '';
         if (!name.includes(q) && !mat.includes(q)) return false;
       }
-      if (monthFilter) {
+      if (filterMonth && filterYear) {
+        const ym = `${filterYear}-${filterMonth}`
         const start = b.start_date ? b.start_date.substring(0, 7) : '';
         const end = b.end_date ? b.end_date.substring(0, 7) : '';
-        if (start !== monthFilter && end !== monthFilter) return false;
+        if (start !== ym && end !== ym) return false;
       }
       return true;
     });
-  }, [bonuses, typeFilter, statusFilter, searchQuery, monthFilter]);
+  }, [bonuses, typeFilter, statusFilter, searchQuery, filterMonth, filterYear]);
 
   const grouped = useMemo(() => {
     const result = {};
@@ -164,15 +173,14 @@ const BonusesList = () => {
     if (typeFilter) p.set('bonus_type', typeFilter)
     if (statusFilter) p.set('status', statusFilter)
     if (searchQuery) p.set('search', searchQuery)
-    if (monthFilter) {
-      const [y, m] = monthFilter.split('-')
-      const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate()
-      p.set('start_date', `${monthFilter}-01`)
-      p.set('end_date', `${monthFilter}-${String(lastDay).padStart(2, '0')}`)
+    if (filterMonth && filterYear) {
+      const lastDay = new Date(parseInt(filterYear), parseInt(filterMonth), 0).getDate()
+      p.set('start_date', `${filterYear}-${filterMonth}-01`)
+      p.set('end_date', `${filterYear}-${filterMonth}-${String(lastDay).padStart(2, '0')}`)
     }
     const qs = p.toString()
     return `/api/v1/bonuses/export${qs ? '?' + qs : ''}`
-  }, [typeFilter, statusFilter, searchQuery, monthFilter])
+  }, [typeFilter, statusFilter, searchQuery, filterMonth, filterYear])
 
   if (loading) {
     return (
@@ -256,10 +264,20 @@ const BonusesList = () => {
         <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Rechercher un employé..."
           className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 w-48" />
-        <input type="month" value={monthFilter} onChange={(e) => setMonthFilter(e.target.value)}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
-        {(typeFilter || statusFilter || searchQuery || monthFilter) && (
-          <button onClick={() => { setTypeFilter(''); setStatusFilter(''); setSearchQuery(''); setMonthFilter(''); }}
+        <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}
+          className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
+          <option value="">Mois</option>
+          {MONTHS.map((name, i) => (
+            <option key={i + 1} value={String(i + 1).padStart(2, '0')}>{name}</option>
+          ))}
+        </select>
+        <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)}
+          className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
+          <option value="">Année</option>
+          {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        {(typeFilter || statusFilter || searchQuery || filterMonth || filterYear) && (
+          <button onClick={() => { setTypeFilter(''); setStatusFilter(''); setSearchQuery(''); setFilterMonth(''); setFilterYear(''); }}
             className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100">
             Réinitialiser
           </button>

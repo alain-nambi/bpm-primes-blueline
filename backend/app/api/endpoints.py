@@ -174,6 +174,73 @@ async def export_sage():
     )
 
 
+# Route GET pour l'export d'une prime spécifique
+@router.get("/bonuses/{bonus_id}/export")
+async def export_bonus_detail(bonus_id: int):
+    bonus = await Bonus.get_or_none(id=bonus_id).prefetch_related('employee', 'created_by')
+    if not bonus:
+        raise HTTPException(404, "Bonus not found")
+
+    common = [
+        "Matricule", "Nom", "Departement", "TypePrime",
+        "DateDebut", "DateFin", "MontantTotal", "Statut",
+        "DejaRejete", "CreePar", "DateCreation"
+    ]
+    type_cols = {
+        'mensuel': ["PerformanceScore", "Absences", "Retard", "PrimeMensuelle"],
+        'astreinte': ["NbJoursAstreinte", "TauxJournalier", "PrimeAstreinte"],
+        'commission': ["CA_Realise", "CA_Objectif", "TauxCommission", "CommissionAmount"],
+    }
+    extra = type_cols.get(bonus.bonus_type.value, [])
+    headers = common + extra
+
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=';')
+    writer.writerow(headers)
+
+    row = [
+        bonus.employee.matricule,
+        bonus.employee.name,
+        bonus.employee.department.value,
+        bonus.bonus_type.value,
+        bonus.start_date.isoformat(),
+        bonus.end_date.isoformat(),
+        str(bonus.total_amount),
+        bonus.status.value,
+        "Oui" if bonus.was_rejected else "Non",
+        bonus.created_by.name if bonus.created_by else '',
+        bonus.created_at.isoformat() if bonus.created_at else '',
+    ]
+    if bonus.bonus_type.value == 'mensuel':
+        row += [
+            str(bonus.performance_score or ''),
+            str(bonus.absences or ''),
+            str(bonus.retard or ''),
+            str(bonus.prime_mensuel_amount or ''),
+        ]
+    elif bonus.bonus_type.value == 'astreinte':
+        row += [
+            str(bonus.nb_jours_astreinte or ''),
+            str(bonus.taux_jour or ''),
+            str(bonus.prime_astreinte_amount or ''),
+        ]
+    elif bonus.bonus_type.value == 'commission':
+        row += [
+            str(bonus.ca_realise or ''),
+            str(bonus.ca_objectif or ''),
+            str(bonus.taux_commission or ''),
+            str(bonus.commission_amount or ''),
+        ]
+    writer.writerow(row)
+
+    output.seek(0)
+    return StreamingResponse(
+        iter(['\ufeff' + output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=prime_{bonus.id}_{datetime.now().strftime('%Y%m%d')}.csv"}
+    )
+
+
 # Route GET pour une prime spécifique
 @router.get("/bonuses/{bonus_id}", response_model=BonusResponse)
 async def get_bonus(bonus_id: int):

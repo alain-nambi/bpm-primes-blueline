@@ -4,7 +4,7 @@ import { getBonus, getBonusValidations, validateBonus } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import Timeline from '../components/Timeline';
 import Modal from '../components/Modal';
-import { ArrowLeftIcon, CheckIcon, XCircleIcon, EditIcon, CalendarIcon, MoonIcon, ChartIcon, EyeIcon, ClipboardIcon } from '../components/Icons';
+import { ArrowLeftIcon, CheckIcon, XCircleIcon, EditIcon, CalendarIcon, MoonIcon, ChartIcon, EyeIcon, ClipboardIcon, DownloadIcon } from '../components/Icons';
 
 const typeIcons = {
   mensuel: CalendarIcon,
@@ -247,6 +247,21 @@ const BonusDetail = () => {
         <span className={`ml-auto text-xs font-medium px-2.5 py-1 rounded-full ${getBadgeClass(bonus.status)} ${bonus.was_rejected ? 'ring-1 ring-red-400' : ''}`}>
           {bonus.status}
         </span>
+        <button onClick={() => {
+          const token = localStorage.getItem('token')
+          fetch(`/api/v1/bonuses/${bonus.id}/export`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.blob())
+            .then(blob => {
+              const url = URL.createObjectURL(blob)
+              const a = document.createElement('a')
+              a.href = url
+              a.download = `prime_${bonus.id}_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.csv`
+              a.click()
+              URL.revokeObjectURL(url)
+            })
+        }} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600" title="Exporter cette prime">
+          <DownloadIcon className="w-5 h-5" />
+        </button>
       </div>
 
       <div className="space-y-5">

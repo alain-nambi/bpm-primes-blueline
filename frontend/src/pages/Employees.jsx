@@ -38,6 +38,13 @@ const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR', {
   day: '2-digit', month: '2-digit', year: 'numeric',
 });
 
+const MONTHS = [
+  'Janvier','Février','Mars','Avril','Mai','Juin',
+  'Juillet','Août','Septembre','Octobre','Novembre','Décembre',
+];
+const currentYear = new Date().getFullYear();
+const YEARS = Array.from({length: 5}, (_, i) => currentYear - 2 + i);
+
 const Employees = () => {
   const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
@@ -50,7 +57,8 @@ const Employees = () => {
   const [bonusesLoading, setBonusesLoading] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [bonusTypeFilter, setBonusTypeFilter] = useState('');
-  const [bonusMonthFilter, setBonusMonthFilter] = useState('');
+  const [filterMonth, setFilterMonth] = useState('');
+  const [filterYear, setFilterYear] = useState('');
   const [bonusStatusFilter, setBonusStatusFilter] = useState('');
 
   useEffect(() => {
@@ -91,7 +99,8 @@ const Employees = () => {
   const loadEmployeeBonuses = async (emp) => {
     setSelectedEmp(emp);
     setBonusTypeFilter('');
-    setBonusMonthFilter('');
+    setFilterMonth('');
+    setFilterYear('');
     setBonusStatusFilter('');
     if (!user?.is_dg && !user?.is_drh && user?.department && emp.department !== user.department) {
       setEmpBonuses([]);
@@ -236,11 +245,10 @@ const Employees = () => {
                   const p = new URLSearchParams({ employee_id: selectedEmp.id })
                   if (bonusTypeFilter) p.set('bonus_type', bonusTypeFilter)
                   if (bonusStatusFilter) p.set('status', bonusStatusFilter)
-                  if (bonusMonthFilter) {
-                    const [y, m] = bonusMonthFilter.split('-')
-                    const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate()
-                    p.set('start_date', `${bonusMonthFilter}-01`)
-                    p.set('end_date', `${bonusMonthFilter}-${String(lastDay).padStart(2, '0')}`)
+                  if (filterMonth && filterYear) {
+                    const lastDay = new Date(parseInt(filterYear), parseInt(filterMonth), 0).getDate()
+                    p.set('start_date', `${filterYear}-${filterMonth}-01`)
+                    p.set('end_date', `${filterYear}-${filterMonth}-${String(lastDay).padStart(2, '0')}`)
                   }
                   const token = localStorage.getItem('token')
                   fetch(`/api/v1/bonuses/export?${p.toString()}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -272,8 +280,18 @@ const Employees = () => {
                     <option value="commission">Commission</option>
                   </select>
                   <div className="flex gap-2">
-                    <input type="month" value={bonusMonthFilter} onChange={(e) => setBonusMonthFilter(e.target.value)}
-                      className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500" />
+                    <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}
+                      className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
+                      <option value="">Mois</option>
+                      {MONTHS.map((name, i) => (
+                        <option key={i + 1} value={String(i + 1).padStart(2, '0')}>{name}</option>
+                      ))}
+                    </select>
+                    <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)}
+                      className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
+                      <option value="">Année</option>
+                      {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
                     <select value={bonusStatusFilter} onChange={(e) => setBonusStatusFilter(e.target.value)}
                       className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
                       <option value="">Tous les statuts</option>
@@ -298,9 +316,9 @@ const Employees = () => {
                   (() => {
                     const filtered = empBonuses.filter(b => {
                       if (bonusTypeFilter && b.bonus_type !== bonusTypeFilter) return false
-                      if (bonusMonthFilter) {
+                      if (filterMonth && filterYear) {
                         const ym = b.start_date ? b.start_date.slice(0, 7) : ''
-                        if (ym !== bonusMonthFilter) return false
+                        if (ym !== `${filterYear}-${filterMonth}`) return false
                       }
                       if (bonusStatusFilter && b.status !== bonusStatusFilter) return false
                       return true

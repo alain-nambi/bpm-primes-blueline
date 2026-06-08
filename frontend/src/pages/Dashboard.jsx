@@ -40,7 +40,7 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [b, e] = await Promise.all([getBonuses(), getEmployees()]);
+        const [b, e] = await Promise.all([getBonuses(), getEmployees(user?.department)]);
         setBonuses(b);
         setEmployees(e);
         setLoading(false);
@@ -110,7 +110,7 @@ const Dashboard = () => {
           { icon: ClipboardIcon, label: 'Total Primes', value: stats.total, sub: formatAmount(stats.totalAmount), bg: 'bg-blue-50', text: 'text-blue-600' },
           { icon: ClockIcon, label: 'En attente', value: stats.pending, sub: 'Non validées', bg: 'bg-amber-50', text: 'text-amber-600' },
           { icon: CheckIcon, label: 'Validées', value: stats.validated, sub: 'Approuvées', bg: 'bg-emerald-50', text: 'text-emerald-600' },
-          { icon: EmployeesIcon, label: 'Employés', value: stats.employees, sub: 'Actifs', bg: 'bg-violet-50', text: 'text-violet-600' },
+          { icon: EmployeesIcon, label: `Employés (${user?.department || 'tous'})`, value: stats.employees, sub: 'Actifs', bg: 'bg-violet-50', text: 'text-violet-600' },
         ].map((card, i) => {
           const Icon = card.icon;
           return (

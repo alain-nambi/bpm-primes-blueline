@@ -25,7 +25,7 @@ const EXPORT_COLUMNS = {
     "DejaRejete", "CreePar", "DateCreation",
   ],
   mensuel: ["Score", "Quantitatif", "Qualitatif"],
-  astreinte: ["Semaines", "TotalDisponibilite", "TotalInterventions", "Exceptionnelle", "Ponctuelle"],
+  astreinte: ["NbDisponibilite", "TotalDisponibilite", "TotalInterventions", "Exceptionnelle", "Ponctuelle"],
   commission: ["CommissionParVente"],
 }
 

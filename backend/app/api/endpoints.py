@@ -188,7 +188,7 @@ async def export_bonus_detail(bonus_id: int, columns: Optional[str] = None):
     ]
     type_cols = {
         'mensuel': ["Score", "Quantitatif", "Qualitatif"],
-        'astreinte': ["Semaines", "TotalDisponibilite", "TotalInterventions", "Exceptionnelle", "Ponctuelle"],
+        'astreinte': ["NbDisponibilite", "TotalDisponibilite", "TotalInterventions", "Exceptionnelle", "Ponctuelle"],
         'commission': ["CommissionParVente"],
     }
     all_possible = common + type_cols.get(bonus.bonus_type.value, [])
@@ -217,7 +217,7 @@ async def export_bonus_detail(bonus_id: int, columns: Optional[str] = None):
         "Score": lambda b: str(b.performance_score or ''),
         "Quantitatif": lambda b: str(sum(i.get('evaluation', 0) for i in (b.details or {}).get('quantitative', []))),
         "Qualitatif": lambda b: str(sum(i.get('evaluation', 0) for i in (b.details or {}).get('qualitative', []))),
-        "Semaines": lambda b: str((b.details or {}).get('weeks', '')),
+        "NbDisponibilite": lambda b: str(sum(int(d.get('nombre', 0)) for d in (b.details or {}).get('disponibilites', []))),
         "PrimeMaxSemaine": lambda b: str((b.details or {}).get('weekly_max', '')),
         "TauxIntervention": lambda b: str((b.details or {}).get('intervention_rate', '')),
         "TotalDisponibilite": lambda b: str((b.details or {}).get('total_dispo', '')),

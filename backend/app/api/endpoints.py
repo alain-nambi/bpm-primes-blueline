@@ -77,6 +77,7 @@ async def list_bonuses(
     bonus_type: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    was_rejected: Optional[bool] = None,
 ):
     query = Bonus.all().prefetch_related('employee')
     if status: query = query.filter(status=status)
@@ -84,6 +85,7 @@ async def list_bonuses(
     if bonus_type: query = query.filter(bonus_type=bonus_type)
     if start_date: query = query.filter(start_date__gte=start_date)
     if end_date: query = query.filter(end_date__lte=end_date)
+    if was_rejected is not None: query = query.filter(was_rejected=was_rejected)
     return await query
 
 
@@ -97,6 +99,7 @@ async def export_bonuses(
     department: Optional[str] = None,
     search: Optional[str] = None,
     columns: Optional[str] = None,
+    was_rejected: Optional[bool] = None,
 ):
     query = Bonus.all().prefetch_related('employee', 'created_by')
     if status: query = query.filter(status=status)
@@ -109,6 +112,7 @@ async def export_bonuses(
     elif end_date:
         query = query.filter(end_date__lte=end_date)
     if department: query = query.filter(employee__department=department)
+    if was_rejected is not None: query = query.filter(was_rejected=was_rejected)
     if search:
         query = query.filter(
             Q(employee__name__icontains=search) | Q(employee__matricule__icontains=search)

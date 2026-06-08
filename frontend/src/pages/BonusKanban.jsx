@@ -47,7 +47,7 @@ const BonusKanban = () => {
   const columns = STATUS_COLUMNS.map(status => ({
     status,
     items: bonuses
-      .filter(b => b.status === status || (status === 'Initialisé' && b.status === 'En attente N+1'))
+      .filter(b => b.status === status)
       .sort((a, b) => (b.start_date || '').localeCompare(a.start_date || '')),
   }));
 
@@ -87,7 +87,7 @@ const BonusKanban = () => {
                     </div>
                     <p className="text-[11px] text-gray-400">{b.start_date && b.end_date ? `${formatDate(b.start_date)} → ${formatDate(b.end_date)}` : '—'}</p>
                     <div className="flex items-center justify-between mt-2">
-                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${badgeClass(b.status)}`}>{b.status}</span>
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${badgeClass(b.status)} ${b.was_rejected ? 'ring-2 ring-red-400' : ''}`}>{b.status}</span>
                       <span className="text-xs font-semibold text-blue-600">{b.total_amount} Ar</span>
                     </div>
                   </Link>

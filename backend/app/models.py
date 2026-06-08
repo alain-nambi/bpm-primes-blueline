@@ -33,7 +33,6 @@ class BonusType(str, Enum):
 # Enumération des statuts de validation
 class ValidationStatus(str, Enum):
     INITIALISE = "Initialisé"
-    EN_ATTENTE_N1 = "En attente N+1"
     EN_ATTENTE_DIRECTEUR = "En attente Directeur"
     EN_ATTENTE_DG = "En attente DG"
     VALIDE = "Prime validée"

@@ -22,7 +22,6 @@ const typeLabels = {
 const getBadgeClass = (status) => {
   const map = {
     'Initialisé': 'bg-orange-100 text-orange-700',
-    'En attente N+1': 'bg-blue-100 text-blue-700',
     'En attente Directeur': 'bg-purple-100 text-purple-700',
     'En attente DG': 'bg-amber-100 text-amber-700',
     'Prime validée': 'bg-emerald-100 text-emerald-700',
@@ -75,7 +74,7 @@ const Dashboard = () => {
   const myPending = useMemo(() => {
     if (!user) return [];
     const myStatuses = [];
-    if (user.is_validator_n1) myStatuses.push('Initialisé', 'En attente N+1');
+    if (user.is_validator_n1) myStatuses.push('Initialisé');
     if (user.is_directeur) myStatuses.push('En attente Directeur');
     if (user.is_dg) myStatuses.push('En attente DG');
     return bonuses.filter(b => myStatuses.includes(b.status));

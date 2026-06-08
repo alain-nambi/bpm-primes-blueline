@@ -6,7 +6,6 @@ const Dot = ({ color }) => (
 
 const statusConfig = {
   'Initialisé': { color: 'bg-gray-100 text-gray-700 border-gray-300', dot: 'text-gray-400' },
-  'En attente N+1': { color: 'bg-amber-50 text-amber-700 border-amber-300', dot: 'text-amber-400' },
   'En attente Directeur': { color: 'bg-amber-50 text-amber-700 border-amber-300', dot: 'text-amber-400' },
   'En attente DG': { color: 'bg-amber-50 text-amber-700 border-amber-300', dot: 'text-amber-400' },
   'Prime validée': { color: 'bg-emerald-50 text-emerald-700 border-emerald-300', dot: 'text-emerald-500' },

@@ -85,7 +85,7 @@ const BonusesList = () => {
 
   const getValidStep = (bonus) => {
     if (!user) return null;
-    if (user.is_validator_n1 && (bonus.status === 'Initialisé' || bonus.status === 'En attente N+1')) return 'N1';
+    if (user.is_validator_n1 && bonus.status === 'Initialisé') return 'N1';
     if (user.is_directeur && bonus.status === 'En attente Directeur') return 'DIRECTEUR';
     if (user.is_dg && bonus.status === 'En attente DG') return 'DG';
     return null;
@@ -100,7 +100,6 @@ const BonusesList = () => {
   const getBadgeClass = (status) => {
     const map = {
       'Initialisé': 'bg-orange-100 text-orange-700',
-      'En attente N+1': 'bg-blue-100 text-blue-700',
       'En attente Directeur': 'bg-purple-100 text-purple-700',
       'En attente DG': 'bg-amber-100 text-amber-700',
       'Prime validée': 'bg-emerald-100 text-emerald-700',
@@ -113,13 +112,13 @@ const BonusesList = () => {
     if (!user) return [];
 
     const myStatuses = [];
-    if (user.is_validator_n1) myStatuses.push('Initialisé', 'En attente N+1');
+    if (user.is_validator_n1) myStatuses.push('Initialisé');
     if (user.is_directeur) myStatuses.push('En attente Directeur');
     if (user.is_dg) myStatuses.push('En attente DG');
 
     const base = [
       { key: 'myValidation', title: 'À valider par vous', highlight: true, filter: (b) => myStatuses.includes(b.status) },
-      { key: 'initialised', title: 'Initialisées', highlight: false, filter: (b) => b.status === 'Initialisé' || b.status === 'En attente N+1' },
+      { key: 'initialised', title: 'Initialisées', highlight: false, filter: (b) => b.status === 'Initialisé' },
       { key: 'pendingDirector', title: 'En attente Directeur', highlight: false, filter: (b) => b.status === 'En attente Directeur' },
       { key: 'pendingDG', title: 'En attente DG', highlight: false, filter: (b) => b.status === 'En attente DG' },
       { key: 'validated', title: 'Validées', highlight: false, filter: (b) => b.status === 'Prime validée' || b.status === 'Validé' },
@@ -137,7 +136,8 @@ const BonusesList = () => {
   const filteredBonuses = useMemo(() => {
     return bonuses.filter((b) => {
       if (typeFilter && b.bonus_type !== typeFilter) return false;
-      if (statusFilter && b.status !== statusFilter) return false;
+      if (statusFilter === 'Prime rejetée') { if (!b.was_rejected) return false; }
+      else if (statusFilter && b.status !== statusFilter) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const name = b.employee?.name?.toLowerCase() || '';
@@ -240,7 +240,6 @@ const BonusesList = () => {
           className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
           <option value="">Tous statuts</option>
           <option value="Initialisé">Initialisé</option>
-          <option value="En attente N+1">En attente N+1</option>
           <option value="En attente Directeur">En attente Directeur</option>
           <option value="En attente DG">En attente DG</option>
           <option value="Prime validée">Validée</option>
@@ -419,7 +418,8 @@ const BonusesList = () => {
               <button onClick={() => {
                 const p = new URLSearchParams()
                 if (typeFilter) p.set('bonus_type', typeFilter)
-                if (statusFilter) p.set('status', statusFilter)
+                if (statusFilter === 'Prime rejetée') p.set('was_rejected', 'true')
+                else if (statusFilter) p.set('status', statusFilter)
                 if (searchQuery) p.set('search', searchQuery)
                 if (filterMonth && filterYear) {
                   const lastDay = new Date(parseInt(filterYear), parseInt(filterMonth), 0).getDate()

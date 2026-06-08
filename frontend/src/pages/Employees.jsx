@@ -26,7 +26,6 @@ const typeLabels = {
 const getBadgeClass = (status) => {
   const map = {
     'Initialisé': 'bg-orange-100 text-orange-700',
-    'En attente N+1': 'bg-blue-100 text-blue-700',
     'En attente Directeur': 'bg-purple-100 text-purple-700',
     'En attente DG': 'bg-amber-100 text-amber-700',
     'Prime validée': 'bg-emerald-100 text-emerald-700',
@@ -276,7 +275,6 @@ const Employees = () => {
                       className="flex-1 px-2 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
                       <option value="">Tous les statuts</option>
                       <option value="Initialisé">Initialisé</option>
-                      <option value="En attente N+1">En attente N+1</option>
                       <option value="En attente Directeur">En attente Directeur</option>
                       <option value="En attente DG">En attente DG</option>
                       <option value="Prime validée">Validée</option>
@@ -300,7 +298,8 @@ const Employees = () => {
                         const ym = b.start_date ? b.start_date.slice(0, 7) : ''
                         if (ym !== `${filterYear}-${filterMonth}`) return false
                       }
-                      if (bonusStatusFilter && b.status !== bonusStatusFilter) return false
+                      if (bonusStatusFilter === 'Prime rejetée') { if (!b.was_rejected) return false; }
+                      else if (bonusStatusFilter && b.status !== bonusStatusFilter) return false
                       return true
                     })
                     if (filtered.length === 0) {

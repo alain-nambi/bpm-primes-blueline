@@ -144,7 +144,6 @@ const Dashboard = () => {
                 </div>
                 <p className="text-sm font-bold text-gray-900">{formatAmount(data.amount)}</p>
               </div>
-            </div>
             </Link>
           );
         })}

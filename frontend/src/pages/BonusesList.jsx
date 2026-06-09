@@ -178,11 +178,18 @@ const BonusesList = () => {
         const mat = b.employee?.matricule?.toLowerCase() || '';
         if (!name.includes(q) && !mat.includes(q)) return false;
       }
-      if (filterMonth && filterYear) {
-        const ym = `${filterYear}-${filterMonth}`
-        const start = b.start_date ? b.start_date.substring(0, 7) : '';
-        const end = b.end_date ? b.end_date.substring(0, 7) : '';
-        if (start !== ym && end !== ym) return false;
+      if (filterYear) {
+        if (filterMonth) {
+          const ym = `${filterYear}-${filterMonth}`
+          const s = b.start_date ? b.start_date.substring(0, 7) : '';
+          const e = b.end_date ? b.end_date.substring(0, 7) : '';
+          if (s !== ym && e !== ym) return false;
+        } else {
+          const y = filterYear;
+          const s = b.start_date ? b.start_date.substring(0, 4) : '';
+          const e = b.end_date ? b.end_date.substring(0, 4) : '';
+          if (s !== y && e !== y) return false;
+        }
       }
       return true;
     });
@@ -558,10 +565,15 @@ const BonusesList = () => {
                 if (statusFilter === 'Prime rejetée') p.set('was_rejected', 'true')
                 else if (statusFilter) p.set('status', statusFilter)
                 if (searchQuery) p.set('search', searchQuery)
-                if (filterMonth && filterYear) {
-                  const lastDay = new Date(parseInt(filterYear), parseInt(filterMonth), 0).getDate()
-                  p.set('start_date', `${filterYear}-${filterMonth}-01`)
-                  p.set('end_date', `${filterYear}-${filterMonth}-${String(lastDay).padStart(2, '0')}`)
+                if (filterYear) {
+                  if (filterMonth) {
+                    const lastDay = new Date(parseInt(filterYear), parseInt(filterMonth), 0).getDate()
+                    p.set('start_date', `${filterYear}-${filterMonth}-01`)
+                    p.set('end_date', `${filterYear}-${filterMonth}-${String(lastDay).padStart(2, '0')}`)
+                  } else {
+                    p.set('start_date', `${filterYear}-01-01`)
+                    p.set('end_date', `${filterYear}-12-31`)
+                  }
                 }
                 p.set('columns', exportColumns.join(','))
                 const token = localStorage.getItem('token')

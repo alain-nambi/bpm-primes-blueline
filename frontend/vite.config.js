@@ -6,6 +6,7 @@ const apiTarget = process.env.VITE_API_URL || 'http://localhost:8000'
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: { include: ['xlsx'] },
   server: {
     port: 3000,
     proxy: {

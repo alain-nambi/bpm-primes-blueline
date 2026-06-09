@@ -299,9 +299,12 @@ const Employees = () => {
                   (() => {
                     const filtered = empBonuses.filter(b => {
                       if (bonusTypeFilter && b.bonus_type !== bonusTypeFilter) return false
-                      if (filterMonth && filterYear) {
-                        const ym = b.start_date ? b.start_date.slice(0, 7) : ''
-                        if (ym !== `${filterYear}-${filterMonth}`) return false
+                      if (filterYear) {
+                        const ym = b.start_date ? b.start_date.slice(0, 4) : ''
+                        if (filterMonth) {
+                          const full = b.start_date ? b.start_date.slice(0, 7) : ''
+                          if (full !== `${filterYear}-${filterMonth}`) return false
+                        } else if (ym !== filterYear) return false
                       }
                       if (bonusStatusFilter === 'Prime rejetée') { if (!b.was_rejected) return false; }
                       else if (bonusStatusFilter && b.status !== bonusStatusFilter) return false
@@ -431,10 +434,15 @@ const Employees = () => {
                 if (bonusTypeFilter) p.set('bonus_type', bonusTypeFilter)
                 if (bonusStatusFilter === 'Prime rejetée') p.set('was_rejected', 'true')
                 else if (bonusStatusFilter) p.set('status', bonusStatusFilter)
-                if (filterMonth && filterYear) {
-                  const lastDay = new Date(parseInt(filterYear), parseInt(filterMonth), 0).getDate()
-                  p.set('start_date', `${filterYear}-${filterMonth}-01`)
-                  p.set('end_date', `${filterYear}-${filterMonth}-${String(lastDay).padStart(2, '0')}`)
+                if (filterYear) {
+                  if (filterMonth) {
+                    const lastDay = new Date(parseInt(filterYear), parseInt(filterMonth), 0).getDate()
+                    p.set('start_date', `${filterYear}-${filterMonth}-01`)
+                    p.set('end_date', `${filterYear}-${filterMonth}-${String(lastDay).padStart(2, '0')}`)
+                  } else {
+                    p.set('start_date', `${filterYear}-01-01`)
+                    p.set('end_date', `${filterYear}-12-31`)
+                  }
                 }
                 p.set('columns', empBonusExportColumns.join(','))
                 const token = localStorage.getItem('token')

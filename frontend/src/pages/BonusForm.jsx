@@ -1,8 +1,32 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import { createBonus, getEmployees, getBonus, updateBonus, getPrimeMax } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { ChartIcon, MoonIcon, CalendarIcon, ExclamationIcon, PlusIcon } from '../components/Icons'
+import * as XLSX from 'xlsx'
+
+const FRENCH_MONTHS = {
+  janvier: '01', février: '02', mars: '03', avril: '04',
+  mai: '05', juin: '06', juillet: '07', août: '08',
+  septembre: '09', octobre: '10', novembre: '11', décembre: '12',
+}
+
+function parseFrenchDate(str) {
+  if (!str) return ''
+  const s = String(str).trim()
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+  const normalized = s.replace(/[–—_-]+/g, ' ')
+  const m = normalized.match(/^(\d{1,2})\s+([a-zéûîôèêëàùü]+)\s+(\d{4})$/i)
+  if (m) {
+    const month = FRENCH_MONTHS[m[2].toLowerCase()]
+    if (month) return `${m[3]}-${month}-${m[1].padStart(2, '0')}`
+  }
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+    const [d, mo, y] = s.split('/')
+    return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`
+  }
+  return s
+}
 
 const DEFAULT_QUANTI_CRITERIA = [
   'Planification du travail',
@@ -92,10 +116,87 @@ export default function BonusForm() {
     { key: 1, employee_id: '', nombre: 1 },
   ])
   const [interventions, setInterventions] = useState([
-    { key: 2, employee_id: '', date: '', heure: '', motif: '', ticket: '', type: 'intervention' },
+    { key: 2, employee_id: '', date: '', heure: '', motif: '', ticket: '', type: 'intervention', demandeur: '', service: '' },
   ])
   const [additionalPrimes, setAdditionalPrimes] = useState({ exceptionnelle: 0, ponctuelle: 0 })
   const [perEmployeeAdditional, setPerEmployeeAdditional] = useState({})
+  const importFileRef = useRef(null)
+  const [importFeedback, setImportFeedback] = useState('')
+  const [importError, setImportError] = useState('')
+
+  const handleImportExcel = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImportFeedback('')
+    setImportError('')
+    try {
+      const data = await file.arrayBuffer()
+      const wb = XLSX.read(data, { cellDates: true })
+      const sheet = wb.Sheets[wb.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' })
+      if (rows.length === 0) { setImportError('Le fichier est vide.'); return }
+      const headers = Object.keys(rows[0])
+      const norm = (s) => s.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+      const findCol = (aliases) => headers.find(h => aliases.some(a => norm(h).includes(a)))
+      const formatDate = (v) => {
+        if (v == null || v === '') return ''
+        if (v instanceof Date) {
+          const y = v.getFullYear(); const m = String(v.getMonth() + 1).padStart(2, '0'); const d = String(v.getDate()).padStart(2, '0')
+          return `${y}-${m}-${d}`
+        }
+        if (typeof v === 'number') {
+          const d = new Date(1899, 11, 30 + v)
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+        }
+        return parseFrenchDate(String(v))
+      }
+      const formatTime = (v) => {
+        if (v == null || v === '') return ''
+        if (v instanceof Date) return `${String(v.getHours()).padStart(2, '0')}:${String(v.getMinutes()).padStart(2, '0')}`
+        if (typeof v === 'number') {
+          const totalMin = Math.round(v * 1440)
+          return `${String(Math.floor(totalMin / 60)).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`
+        }
+        return String(v).trim().replace(/h/, ':').slice(0, 5)
+      }
+      const dateCol = findCol(['date'])
+      const heureCol = findCol(['heure'])
+      const respCol = findCol(['responsable', 'employe', 'employé'])
+      const motifCol = findCol(['motif'])
+      const demCol = findCol(['demandeur'])
+      const servCol = findCol(['service'])
+      const ticketCol = findCol(['ticket', 'numero', 'numéro', 'ref'])
+      const sample = rows[0]
+      const debugInfo = headers.map(h => {
+        const v = sample[h]; const t = typeof v
+        return `${h}(${t}${v instanceof Date ? ' Date' : ''})`
+      }).join(' | ')
+      const parsed = rows.map((row, idx) => {
+        const rawResp = respCol ? String(row[respCol] || '').trim() : ''
+        const emp = rawResp ? employees.find(e => e.name.toLowerCase().includes(rawResp.toLowerCase())) : null
+        const dateVal = dateCol ? row[dateCol] : undefined
+        const heureVal = heureCol ? row[heureCol] : undefined
+        return {
+          key: Date.now() + idx + Math.random(),
+          employee_id: emp?.id || '',
+          employee_name: emp?.name || rawResp,
+          date: formatDate(dateVal),
+          heure: formatTime(heureVal),
+          motif: motifCol ? String(row[motifCol] || '') : '',
+          type: 'intervention',
+          ticket: ticketCol ? String(row[ticketCol] || '') : '',
+          demandeur: demCol ? String(row[demCol] || '') : '',
+          service: servCol ? String(row[servCol] || '') : '',
+        }
+      })
+      setInterventions(prev => [...prev, ...parsed])
+      const detected = [dateCol && `date[${dateCol}]`, heureCol && `heure[${heureCol}]`, respCol && `employé[${respCol}]`, motifCol && `motif[${motifCol}]`, demCol && `demandeur[${demCol}]`, servCol && `service[${servCol}]`, ticketCol && `ticket[${ticketCol}]`].filter(Boolean)
+      setImportFeedback(`${parsed.length} intervention(s) importée(s). Colonnes: ${detected.join(', ')}. Debug: ${debugInfo}`)
+    } catch (err) {
+      setImportError('Erreur lors de la lecture du fichier : ' + err.message)
+    }
+    e.target.value = ''
+  }
 
   const handleEmpAdditional = (empId, field, value) => {
     setPerEmployeeAdditional(prev => ({
@@ -222,7 +323,7 @@ export default function BonusForm() {
   }
 
   const addIntervRow = () => {
-    setInterventions([...interventions, { key: Date.now(), employee_id: '', date: '', heure: '', motif: '', ticket: '', type: 'intervention' }])
+    setInterventions([...interventions, { key: Date.now(), employee_id: '', date: '', heure: '', motif: '', ticket: '', type: 'intervention', demandeur: '', service: '' }])
   }
 
   const removeIntervRow = (index) => {
@@ -290,6 +391,7 @@ export default function BonusForm() {
             interventions: empIntervs.map(i => ({
               employee_id: i.employee_id, employee_name: empName(i.employee_id),
               date: i.date, heure: i.heure, motif: i.motif, type: i.type || 'intervention', ticket: i.ticket,
+              demandeur: i.demandeur || '', service: i.service || '',
             })),
             total_dispo: totalDispo,
             total_interv: empIntervs.length * astreinteConfig.interventionRate,
@@ -759,7 +861,13 @@ export default function BonusForm() {
                 <h2 className="font-semibold text-base-content text-sm">Interventions</h2>
                 <p className="text-xs text-base-content/50">Taux : {Number(astreinteConfig.interventionRate).toLocaleString('fr-FR')} Ar / intervention</p>
               </div>
-              <button type="button" onClick={addIntervRow} className="btn btn-sm bg-brand-600 hover:bg-brand-700 text-white border-0">+ Ajouter</button>
+              <div className="flex gap-2">
+                {importFeedback && <span className="text-xs text-green-600 self-center">{importFeedback}</span>}
+                {importError && <span className="text-xs text-red-600 self-center">{importError}</span>}
+                <input ref={importFileRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportExcel} />
+                <button type="button" onClick={() => importFileRef.current?.click()} className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-0">Importer Excel</button>
+                <button type="button" onClick={addIntervRow} className="btn btn-sm bg-brand-600 hover:bg-brand-700 text-white border-0">+ Ajouter</button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -768,6 +876,8 @@ export default function BonusForm() {
                     <th className="text-left py-2 px-2 font-medium text-base-content/60">Employé</th>
                     <th className="text-center py-2 px-2 font-medium text-base-content/60">Date</th>
                     <th className="text-center py-2 px-2 font-medium text-base-content/60">Heure</th>
+                    <th className="text-left py-2 px-2 font-medium text-base-content/60">Demandeur</th>
+                    <th className="text-left py-2 px-2 font-medium text-base-content/60">Service</th>
                     <th className="text-left py-2 px-2 font-medium text-base-content/60">Motif</th>
                     <th className="text-center py-2 px-2 font-medium text-base-content/60">Type</th>
                     <th className="text-center py-2 px-2 font-medium text-base-content/60">Ticket</th>
@@ -792,6 +902,14 @@ export default function BonusForm() {
                       <td className="py-1 px-2">
                         <input type="time" value={iv.heure} onChange={(e) => handleIntervChange(i, 'heure', e.target.value)}
                           className="w-full px-2 py-1 rounded border border-base-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 text-sm" />
+                      </td>
+                      <td className="py-1 px-2">
+                        <input type="text" value={iv.demandeur || ''} onChange={(e) => handleIntervChange(i, 'demandeur', e.target.value)}
+                          className="w-full px-2 py-1 rounded border border-base-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 text-sm" placeholder="Demandeur" />
+                      </td>
+                      <td className="py-1 px-2">
+                        <input type="text" value={iv.service || ''} onChange={(e) => handleIntervChange(i, 'service', e.target.value)}
+                          className="w-full px-2 py-1 rounded border border-base-200 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 text-sm" placeholder="Service" />
                       </td>
                       <td className="py-1 px-2">
                         <input type="text" value={iv.motif} onChange={(e) => handleIntervChange(i, 'motif', e.target.value)}
@@ -820,7 +938,7 @@ export default function BonusForm() {
                 </tbody>
                 <tfoot>
                   <tr className="font-semibold border-t-2 border-brand-200">
-                    <td colSpan="6" className="py-2 px-2 text-right">Total Interventions</td>
+                    <td colSpan="8" className="py-2 px-2 text-right">Total Interventions</td>
                     <td className="py-2 px-2 text-right text-brand-600">{totalInterv.toLocaleString('fr-FR')} Ar</td>
                     <td></td>
                   </tr>

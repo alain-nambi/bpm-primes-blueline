@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { getPrimeMax, createPrimeMax, updatePrimeMax, deletePrimeMax } from '../services/api';
+import { getPrimeMax, createPrimeMax, updatePrimeMax, deletePrimeMax, getEmployees, updateEmployee } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { PlusIcon, EditIcon, XCircleIcon, LockIcon } from '../components/Icons';
+import { PlusIcon, EditIcon, XCircleIcon, LockIcon, MoonIcon } from '../components/Icons';
 
 const BONUS_TYPES = [
   { value: 'mensuel', label: 'Mensuel' },
   { value: 'astreinte', label: 'Astreinte' },
   { value: 'commission', label: 'Commission' },
 ];
+
+const ASTR_DEPARTMENTS = ['BBS', 'DO', 'DSI', 'DT'];
 
 const PlafondsPage = () => {
   const { user } = useAuth();
@@ -16,6 +18,8 @@ const PlafondsPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ department: user?.department || 'Clientèle', bonus_type: 'mensuel', amount: '' });
+  const [astrEmployees, setAstrEmployees] = useState([]);
+  const [astrLoading, setAstrLoading] = useState(false);
 
   const fetchPlafonds = async () => {
     try {
@@ -26,6 +30,29 @@ const PlafondsPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAstrEmployees = async () => {
+    setAstrLoading(true);
+    try {
+      const all = await getEmployees();
+      setAstrEmployees(all.filter(e => ASTR_DEPARTMENTS.includes(e.department)));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAstrLoading(false);
+    }
+  };
+
+  const handleRateChange = (empId, value) => {
+    setAstrEmployees(prev => prev.map(e => e.id === empId ? { ...e, astreinte_rate: value === '' ? null : parseInt(value) } : e))
+  };
+
+  const handleRateSave = (empId, rate) => {
+    updateEmployee(empId, { astreinte_rate: rate }).catch(err => {
+      console.error(err);
+      fetchAstrEmployees();
+    });
   };
 
   useEffect(() => {
@@ -40,6 +67,7 @@ const PlafondsPage = () => {
       }
     };
     load();
+    fetchAstrEmployees();
   }, []);
 
   const canEdit = (p) => p.department === user?.department;
@@ -200,6 +228,48 @@ const PlafondsPage = () => {
           );
         })}
       </div>
+
+      {(user?.is_dg || user?.is_drh) && (
+        <div className="mt-10 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-5 py-3 font-semibold text-sm bg-violet-50 text-violet-600 border-b border-violet-200 flex items-center gap-2">
+            <MoonIcon className="w-4 h-4" /> Taux astreinte spéciaux
+            <span className="text-xs font-normal text-violet-400">— Appliquer un taux personnalisé par employé (vide = taux par défaut)</span>
+          </div>
+          {astrLoading ? (
+            <div className="flex justify-center py-6"><span className="loading loading-spinner loading-sm" /></div>
+          ) : astrEmployees.length === 0 ? (
+            <p className="text-center text-gray-400 py-6 text-sm">Aucun employé dans les départements d'astreinte</p>
+          ) : (
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Employé</th>
+                  <th>Département</th>
+                  <th className="w-48">Taux personnalisé (Ar/semaine)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {astrEmployees.map((emp) => (
+                  <tr key={emp.id}>
+                    <td className="font-medium text-gray-900">{emp.name}</td>
+                    <td className="text-gray-500 text-sm">{emp.department}</td>
+                    <td>
+                      <input type="number" value={emp.astreinte_rate ?? ''} placeholder="70000 (défaut)"
+                        onChange={(e) => handleRateChange(emp.id, e.target.value)}
+                        onBlur={(e) => {
+                          const val = e.target.value === '' ? null : parseInt(e.target.value)
+                          if (val !== emp.astreinte_rate) handleRateSave(emp.id, val)
+                        }}
+                        className="w-36 px-2 py-1 rounded border border-gray-200 text-sm text-right focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 };

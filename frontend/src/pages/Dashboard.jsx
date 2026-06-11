@@ -106,7 +106,7 @@ const Dashboard = () => {
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-8">Dashboard</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
         {[
           { icon: ClipboardIcon, label: 'Total Primes', value: stats.total, sub: formatAmount(stats.totalAmount), bg: 'bg-blue-50', text: 'text-blue-600' },
           { icon: ClockIcon, label: 'En attente', value: stats.pending, sub: 'Non validées', bg: 'bg-amber-50', text: 'text-amber-600' },
@@ -130,7 +130,7 @@ const Dashboard = () => {
         })}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-3">
         {Object.entries(typeConfig).map(([key, cfg]) => {
           const data = stats.byType[key] || { count: 0, amount: 0 };
           const Icon = cfg.icon;

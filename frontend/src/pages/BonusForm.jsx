@@ -419,7 +419,7 @@ export default function BonusForm() {
       }))
       navigateAfterSave()
     } catch (err) {
-      setError(err.response?.status === 409 ? 'Cette prime existe déjà pour cet employé sur cette période.' : (err.response?.data?.detail || "Erreur lors de la création"))
+      setError(err.response?.status === 409 ? 'Cette prime existe déjà pour cet employé sur cette période.' : `Erreur (${err.response?.status}): ${err.response?.data?.detail || err.message || "inconnue"}`)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setLoading(false)
@@ -476,7 +476,7 @@ export default function BonusForm() {
       })
       navigateAfterSave()
     } catch (err) {
-      setError(err.response?.status === 409 ? 'Cette prime existe déjà pour cet employé sur cette période.' : (err.response?.data?.detail || "Erreur lors de la création"))
+      setError(err.response?.status === 409 ? 'Cette prime existe déjà pour cet employé sur cette période.' : `Erreur (${err.response?.status}): ${err.response?.data?.detail || err.message || "inconnue"}`)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setLoading(false)
@@ -544,7 +544,7 @@ export default function BonusForm() {
       ))
       navigateAfterSave()
     } catch (err) {
-      setError(err.response?.status === 409 ? 'Cette prime existe déjà pour cet employé sur cette période.' : (err.response?.data?.detail || "Erreur lors de la création"))
+      setError(err.response?.status === 409 ? 'Cette prime existe déjà pour cet employé sur cette période.' : `Erreur (${err.response?.status}): ${err.response?.data?.detail || err.message || "inconnue"}`)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setLoading(false)
@@ -572,7 +572,7 @@ export default function BonusForm() {
       await saveBonus(payload)
       navigateAfterSave()
     } catch (err) {
-      setError(err.response?.status === 409 ? 'Cette prime existe déjà pour cet employé sur cette période.' : (err.response?.data?.detail || "Erreur lors de la création"))
+      setError(err.response?.status === 409 ? 'Cette prime existe déjà pour cet employé sur cette période.' : `Erreur (${err.response?.status}): ${err.response?.data?.detail || err.message || "inconnue"}`)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } finally {
       setLoading(false)

@@ -559,10 +559,10 @@ export default function BonusForm() {
         employee_id: parseInt(simpleForm.employee_id),
         start_date: simpleForm.start_date,
         end_date: simpleForm.end_date,
-        bonus_type: type,
+        bonus_type: editType,
         total_amount: parseFloat(simpleForm.total_amount),
       }
-      const extraFields = type === 'astreinte'
+      const extraFields = editType === 'astreinte'
         ? ['nb_jours_astreinte', 'taux_jour', 'prime_astreinte_amount']
         : ['ca_realise', 'ca_objectif', 'taux_commission', 'commission_amount']
       for (const f of extraFields) {
@@ -683,7 +683,7 @@ export default function BonusForm() {
     </div>
   )
 
-  if (type === 'commission') {
+  if (editType === 'commission') {
     const totalCommission = sales.reduce((s, row) => s + (parseFloat(row.nombre) || 0) * commissionConfig.rate, 0)
 
     return (
@@ -781,7 +781,7 @@ export default function BonusForm() {
     )
   }
 
-  if (type === 'astreinte') {
+  if (editType === 'astreinte') {
     const weeks = calcWeeks(params.startDate, params.endDate)
     const totalDispo = disponibilites.reduce((s, d) => s + (parseFloat(d.nombre) || 0) * getRate(d.employee_id), 0)
     const totalInterv = interventions.filter(i => i.employee_id).length * astreinteConfig.interventionRate

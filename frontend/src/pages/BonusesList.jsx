@@ -34,7 +34,7 @@ const BonusesList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [bonuses, setBonuses] = useState([]);
-  const [viewMode, setViewMode] = useState('date');
+  const [viewMode, setViewMode] = useState(() => new URLSearchParams(window.location.search).get('view') === 'status' ? 'status' : 'date');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');

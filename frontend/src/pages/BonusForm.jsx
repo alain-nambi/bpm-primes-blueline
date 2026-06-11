@@ -71,7 +71,7 @@ export default function BonusForm() {
   const navigateAfterSave = () => {
     const msg = isEditing ? 'Prime modifiée avec succès' : 'Prime créée avec succès';
     if (!isEditing) navigate('/bonuses', { state: { success: msg } });
-    else { navigate('/bonuses', { state: { success: msg } }); }
+    else navigate(`/bonuses/${id}`);
   };
 
   const [employees, setEmployees] = useState([])

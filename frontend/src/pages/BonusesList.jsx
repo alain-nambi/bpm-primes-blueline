@@ -232,6 +232,8 @@ const BonusesList = () => {
 
   const clearSelection = () => setSelectedBonuses(new Set());
 
+  const validatedCount = useMemo(() => bonuses.filter(b => b.status === 'Prime validée').length, [bonuses]);
+
   const getCommonStep = useCallback(() => {
     const ids = [...selectedBonuses];
     if (ids.length === 0) return null;
@@ -277,11 +279,12 @@ const BonusesList = () => {
                   URL.revokeObjectURL(url)
                 })
             }}
-              className="btn btn-sm bg-emerald-600 hover:bg-emerald-700 text-white border-0"
+              className="btn bg-emerald-600 hover:bg-emerald-700 text-white border-0 gap-2"
               title="Export rapide de toutes les primes validées"
             >
               <DownloadIcon className="w-4 h-4" />
               Export validées
+              <span className="badge badge-sm bg-white/20 text-white font-bold">{validatedCount}</span>
             </button>
           )}
           <button onClick={() => {

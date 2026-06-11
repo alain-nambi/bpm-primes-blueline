@@ -597,34 +597,49 @@ export default function BonusForm() {
             <div className="bg-blue-50 text-blue-700 text-sm rounded-lg px-3 py-2">
               Les employés sont définis dans les tableaux ci-dessous. Une prime sera créée par employé.
             </div>
+          ) : isEditing ? (
+            <div className="space-y-2">
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Nom et prénom</label>
+                <input type="text" value={employee.name} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Matricule</label>
+                <input type="text" value={employee.matricule} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Département</label>
+                <input type="text" value={employee.department} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+              </div>
+            </div>
           ) : (
-            <div>
-              <label className="block text-sm font-medium text-base-content/70 mb-1">Employé</label>
-              <select value={selectedEmp?.id || ''} onChange={handleSelectEmployee}
-                className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500">
-                <option value="">Sélectionner...</option>
-                {employees.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.matricule})</option>)}
-              </select>
+            <div className="space-y-2">
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Employé</label>
+                <select value={selectedEmp?.id || ''} onChange={handleSelectEmployee}
+                  className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500">
+                  <option value="">Sélectionner...</option>
+                  {employees.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.matricule})</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Département</label>
+                <input type="text" value={employee.department} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Nom et prénom</label>
+                <input type="text" value={employee.name} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Matricule</label>
+                <input type="text" value={employee.matricule} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-base-content/70 mb-1">Service</label>
+                <input type="text" value={employee.service} onChange={(e) => setEmployee({ ...employee, service: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
+              </div>
             </div>
           )}
-          {editType !== 'astreinte' && (<>
-            <div>
-              <label className="block text-sm font-medium text-base-content/70 mb-1">Département</label>
-              <input type="text" value={employee.department} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-base-content/70 mb-1">Nom et prénom</label>
-              <input type="text" value={employee.name} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-base-content/70 mb-1">Matricule</label>
-              <input type="text" value={employee.matricule} readOnly className="w-full px-3 py-2 rounded-lg border border-base-200 bg-base-100 text-base-content/60" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-base-content/70 mb-1">Service</label>
-              <input type="text" value={employee.service} onChange={(e) => setEmployee({ ...employee, service: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500" />
-            </div>
-          </>)}
         </div>
       </div>
 

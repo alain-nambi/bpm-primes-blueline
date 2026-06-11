@@ -257,6 +257,7 @@ export default function BonusForm() {
     getBonus(id).then((b) => {
       setEditType(b.bonus_type);
       setSelectedEmp(b.employee || null);
+      if (b.employee) setEmployee({ department: b.employee.department || '', service: '', name: b.employee.name, function: '', matricule: b.employee.matricule });
       setParams((p) => ({ ...p, startDate: b.start_date, endDate: b.end_date }));
       if (b.details) {
         const d = b.details;

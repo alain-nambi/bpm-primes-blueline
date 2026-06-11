@@ -368,7 +368,19 @@ const BonusesList = () => {
         </div>
       </div>
 
-      {viewMode === 'status' ? sections.map((section) => {
+      {filteredBonuses.length === 0 ? (
+        <div className="p-12 text-center text-gray-400 bg-white rounded-xl border border-gray-200">
+          <DownloadIcon className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+          <p className="font-medium text-gray-500">Aucune prime trouvée</p>
+          <p className="text-sm text-gray-400 mt-1">Aucune prime ne correspond aux filtres appliqués</p>
+          {(typeFilter || statusFilter || searchQuery || filterMonth || filterYear) && (
+            <button onClick={() => { setTypeFilter(''); setStatusFilter(''); setSearchQuery(''); setFilterMonth(''); setFilterYear(''); }}
+              className="btn btn-sm btn-ghost mt-4 text-blue-600">
+              Réinitialiser les filtres
+            </button>
+          )}
+        </div>
+      ) : viewMode === 'status' ? sections.map((section) => {
         const items = grouped[section.key] || [];
         if (items.length === 0 && section.key !== 'myValidation') return null;
 

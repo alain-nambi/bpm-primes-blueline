@@ -167,7 +167,7 @@ const Dashboard = () => {
         ) : (
           <div className="p-3 bg-white rounded-b-xl border border-t-0 border-gray-200">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
-              {myPending.map((bonus) => {
+              {myPending.slice(0, 6).map((bonus) => {
                 return (
                   <Link key={bonus.id} to={`/bonuses/${bonus.id}`}
                     className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm transition-all group">

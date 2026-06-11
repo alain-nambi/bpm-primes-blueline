@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { getBonuses, validateBonus, batchValidateBonuses } from '../services/api';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { EyeIcon, CheckIcon, EditIcon, DownloadIcon, CalendarIcon, MoonIcon, ChartIcon, FilterIcon } from '../components/Icons';
 import Modal from '../components/Modal';
@@ -33,6 +33,7 @@ const YEARS = Array.from({length: 5}, (_, i) => currentYear - 2 + i);
 const BonusesList = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [bonuses, setBonuses] = useState([]);
   const [viewMode, setViewMode] = useState(() => new URLSearchParams(window.location.search).get('view') === 'status' ? 'status' : 'date');
   const [typeFilter, setTypeFilter] = useState('');
@@ -66,6 +67,10 @@ const BonusesList = () => {
 
   useEffect(() => {
     fetchBonuses();
+    if (location.state?.success) {
+      setToast({ type: 'success', message: location.state.success });
+      window.history.replaceState({}, '');
+    }
   }, []);
 
   const handleValidate = async (bonusId, step) => {

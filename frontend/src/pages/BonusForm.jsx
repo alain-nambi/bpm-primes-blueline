@@ -69,8 +69,9 @@ export default function BonusForm() {
 
   const saveBonus = isEditing ? (data) => updateBonus(id, data) : createBonus;
   const navigateAfterSave = () => {
-    if (!isEditing) navigate('/bonuses');
-    else { getBonus(id).then(setEditBonus); navigate('/bonuses'); }
+    const msg = isEditing ? 'Prime modifiée avec succès' : 'Prime créée avec succès';
+    if (!isEditing) navigate('/bonuses', { state: { success: msg } });
+    else { getBonus(id).then(setEditBonus); navigate('/bonuses', { state: { success: msg } }); }
   };
 
   const [employees, setEmployees] = useState([])

@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { getPrimeMax, createPrimeMax, updatePrimeMax, deletePrimeMax, getEmployees, updateEmployee } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { PlusIcon, EditIcon, XCircleIcon, LockIcon, MoonIcon, CheckIcon } from '../components/Icons';
+import { PlusIcon, XCircleIcon, LockIcon, MoonIcon, CheckIcon } from '../components/Icons';
 import Modal from '../components/Modal';
 
 const BONUS_TYPES = [
@@ -22,9 +22,6 @@ const PlafondsPage = () => {
   const { user } = useAuth();
   const [plafonds, setPlafonds] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ department: user?.department || 'Clientèle', bonus_type: 'mensuel', amount: '' });
   const [astrEmployees, setAstrEmployees] = useState([]);
   const [showRateModal, setShowRateModal] = useState(false);
   const [rateModalDept, setRateModalDept] = useState('');
@@ -89,33 +86,6 @@ const PlafondsPage = () => {
 
   const canEdit = (p) => user?.is_dg || user?.is_drh || p.department === user?.department;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editing) {
-        await updatePrimeMax(editing, form);
-      } else {
-        await createPrimeMax(form);
-      }
-      setShowForm(false);
-      setEditing(null);
-      setForm({ department: user?.department || 'Clientèle', bonus_type: 'mensuel', amount: '' });
-      fetchPlafonds();
-    } catch (err) {
-      alert(err.response?.data?.detail || 'Erreur lors de la sauvegarde');
-    }
-  };
-
-  const formRef = useRef(null);
-
-  const handleEdit = (p) => {
-    if (!canEdit(p)) return;
-    setEditing(p.id);
-    setForm({ department: p.department, bonus_type: p.bonus_type, amount: p.amount });
-    setShowForm(true);
-    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-  };
-
   const handleDelete = async (id) => {
     if (!confirm('Supprimer ce plafond ?')) return;
     try {
@@ -124,12 +94,6 @@ const PlafondsPage = () => {
     } catch (err) {
       alert(err.response?.data?.detail || 'Erreur lors de la suppression');
     }
-  };
-
-  const openNewForm = () => {
-    setEditing(null);
-    setForm({ department: user?.department || 'Clientèle', bonus_type: 'mensuel', amount: '' });
-    setShowForm(true);
   };
 
   const handleCellSave = async (department, type) => {
@@ -149,71 +113,46 @@ const PlafondsPage = () => {
     setEditingCell(null);
   };
 
+  const openCellEdit = (department, type) => {
+    const plafond = plafonds.find(p => p.department === department && p.bonus_type === type);
+    setEditingCell({ department, type });
+    setEditValue(plafond ? parseFloat(plafond.amount).toString() : '');
+  };
+
   if (loading) {
     return <div className="flex justify-center items-center h-64"><span className="loading loading-spinner loading-lg" /></div>;
   }
 
+  const renderCell = (dept, type, colorRing = 'rose') => {
+    const canEditDept = user?.is_dg || user?.is_drh || dept === user?.department;
+    const plafond = plafonds.find(p => p.department === dept && p.bonus_type === type);
+    const isEditing = editingCell?.department === dept && editingCell?.type === type;
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-1">
+          <input type="number" value={editValue} onChange={(e) => setEditValue(e.target.value)}
+            className="w-24 px-2 py-1 rounded border border-gray-300 text-sm text-center focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+            onKeyDown={(e) => { if (e.key === 'Enter') handleCellSave(dept, type); if (e.key === 'Escape') setEditingCell(null); }}
+            autoFocus />
+          <button onClick={() => handleCellSave(dept, type)} className="text-green-600 hover:text-green-800 text-sm font-bold">✓</button>
+          <button onClick={() => setEditingCell(null)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+        </div>
+      );
+    }
+    return (
+      <span onClick={() => { if (canEditDept) openCellEdit(dept, type); }}
+        className={`${canEditDept ? 'cursor-pointer hover:bg-rose-50 px-2 py-1 rounded' : 'text-gray-400'} inline-block`}>
+        {plafond ? `${parseFloat(plafond.amount).toLocaleString('fr-FR')} Ar` : '—'}
+      </span>
+    );
+  };
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Plafonds des Primes</h1>
-          <p className="text-sm text-gray-400 mt-1">{user?.is_dg || user?.is_drh ? 'Accès total — vous pouvez modifier tous les plafonds' : `Vous ne pouvez modifier que les plafonds de votre département (${user?.department})`}</p>
-        </div>
-        <button onClick={openNewForm} className="btn bg-blue-600 hover:bg-blue-700 text-white border-0 btn-sm flex items-center gap-1.5">
-          <PlusIcon className="w-4 h-4" /> Nouveau plafond
-        </button>
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Plafonds des Primes</h1>
+        <p className="text-sm text-gray-400 mt-1">{user?.is_dg || user?.is_drh ? 'Accès total — vous pouvez modifier tous les plafonds' : `Vous ne pouvez modifier que les plafonds de votre département (${user?.department})`}</p>
       </div>
-
-      {showForm && (
-        <div ref={formRef} className="card bg-white border border-gray-200 shadow-sm mb-6">
-          <div className="card-body p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">{editing ? 'Modifier' : 'Nouveau'} plafond</h3>
-            <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
-              <div className="form-control">
-                <label className="label"><span className="label-text">Département</span></label>
-                <select
-                  className="select select-bordered select-sm w-56"
-                  value={form.department}
-                  disabled
-                >
-                  <option value={user?.department}>{user?.department}</option>
-                </select>
-              </div>
-              <div className="form-control">
-                <label className="label"><span className="label-text">Type de prime</span></label>
-                <select
-                  className="select select-bordered select-sm w-40"
-                  value={form.bonus_type}
-                  onChange={(e) => setForm({ ...form, bonus_type: e.target.value })}
-                  required
-                >
-                  {BONUS_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </select>
-              </div>
-              <div className="form-control">
-                <label className="label"><span className="label-text">Montant max (Ar)</span></label>
-                <input
-                  type="number"
-                  step="0.01"
-                  className="input input-bordered input-sm w-40"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="flex gap-2">
-                <button type="submit" className="btn btn-sm bg-blue-600 hover:bg-blue-700 text-white border-0">
-                  {editing ? 'Modifier' : 'Créer'}
-                </button>
-                <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setShowForm(false); setEditing(null); }}>
-                  Annuler
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       <div className="space-y-6">
         {BONUS_TYPES.map((bt) => {
@@ -231,31 +170,22 @@ const PlafondsPage = () => {
                   <tr>
                     <th>Département</th>
                     <th>Montant max (Ar)</th>
-                    <th className="w-24">Actions</th>
+                    <th className="w-16">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.map((p) => (
                     <tr key={p.id} className={!canEdit(p) ? 'opacity-60' : ''}>
                       <td className="font-medium text-gray-900">{p.department}</td>
-                      <td className="font-medium text-gray-900">{parseFloat(p.amount).toLocaleString('fr-FR')} Ar</td>
+                      <td>{renderCell(p.department, p.bonus_type)}</td>
                       <td>
-                        <div className="flex gap-1">
-                          {canEdit(p) ? (
-                            <>
-                              <button className="btn btn-sm btn-ghost" title="Modifier" onClick={() => handleEdit(p)}>
-                                <EditIcon className="w-4 h-4" />
-                              </button>
-                              <button className="btn btn-sm btn-ghost text-red-500" title="Supprimer" onClick={() => handleDelete(p.id)}>
-                                <XCircleIcon className="w-4 h-4" />
-                              </button>
-                            </>
-                          ) : (
-                            <span className="text-xs text-gray-400 flex items-center gap-1 px-2">
-                              <LockIcon className="w-3 h-3" /> Autre dép.
-                            </span>
-                          )}
-                        </div>
+                        {canEdit(p) ? (
+                          <button className="btn btn-sm btn-ghost text-red-500" title="Supprimer" onClick={() => handleDelete(p.id)}>
+                            <XCircleIcon className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400 px-2"><LockIcon className="w-3 h-3 inline" /></span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -279,37 +209,12 @@ const PlafondsPage = () => {
             </tr>
           </thead>
           <tbody>
-            {ASTR_DEPARTMENTS.map((dept) => {
-              const canEditDept = user?.is_dg || user?.is_drh || dept === user?.department;
-              return (
-                <tr key={dept}>
-                  <td className="font-medium text-gray-900">{dept}</td>
-                  {INTERV_TYPES.map((t) => {
-                    const plafond = plafonds.find(p => p.department === dept && p.bonus_type === t.value);
-                    const isEditing = editingCell?.department === dept && editingCell?.type === t.value;
-                    return (
-                      <td key={t.value}>
-                        {isEditing ? (
-                          <div className="flex items-center gap-1">
-                            <input type="number" value={editValue} onChange={(e) => setEditValue(e.target.value)}
-                              className="w-24 px-2 py-1 rounded border border-gray-300 text-sm text-center focus:outline-none focus:ring-2 focus:ring-rose-500/30"
-                              onKeyDown={(e) => { if (e.key === 'Enter') handleCellSave(dept, t.value); if (e.key === 'Escape') setEditingCell(null); }}
-                              autoFocus />
-                            <button onClick={() => handleCellSave(dept, t.value)} className="text-green-600 hover:text-green-800 text-sm font-bold">✓</button>
-                            <button onClick={() => setEditingCell(null)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
-                          </div>
-                        ) : (
-                          <span onClick={() => { if (canEditDept) { setEditingCell({ department: dept, type: t.value }); setEditValue(plafond ? parseFloat(plafond.amount).toString() : ''); } }}
-                            className={`${canEditDept ? 'cursor-pointer hover:bg-rose-50 px-2 py-1 rounded' : 'text-gray-400'} inline-block`}>
-                            {plafond ? `${parseFloat(plafond.amount).toLocaleString('fr-FR')} Ar` : '—'}
-                          </span>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
+            {ASTR_DEPARTMENTS.map((dept) => (
+              <tr key={dept}>
+                <td className="font-medium text-gray-900">{dept}</td>
+                {INTERV_TYPES.map((t) => <td key={t.value}>{renderCell(dept, t.value)}</td>)}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

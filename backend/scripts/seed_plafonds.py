@@ -19,6 +19,8 @@ DEFAULTS = {
     'mensuel': 150000,
     'astreinte': 70000,
     'commission': 200000,
+    'intervention': 9000,
+    'ponctuelle': 9000,
     'exceptionnel': 9000,
 }
 
@@ -26,6 +28,8 @@ BONUS_TYPE_DEPARTMENTS = {
     'mensuel': DEPARTMENTS,
     'astreinte': ['BBS', 'DO', 'DSI', 'DT'],
     'commission': ['Commercial GP', 'Commercial entreprise'],
+    'intervention': ['BBS', 'DO', 'DSI', 'DT'],
+    'ponctuelle': ['BBS', 'DO', 'DSI', 'DT'],
     'exceptionnel': ['BBS', 'DO', 'DSI', 'DT'],
 }
 

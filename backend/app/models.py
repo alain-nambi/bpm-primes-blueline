@@ -29,6 +29,8 @@ class BonusType(str, Enum):
     MENSUEL = "mensuel"
     ASTREINTE = "astreinte"
     COMMISSION = "commission"
+    INTERVENTION = "intervention"
+    PONCTUELLE = "ponctuelle"
     EXCEPTIONNEL = "exceptionnel"
 
 # Enumération des statuts de validation

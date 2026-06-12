@@ -8,7 +8,9 @@ const BONUS_TYPES = [
   { value: 'mensuel', label: 'Mensuel' },
   { value: 'astreinte', label: 'Astreinte' },
   { value: 'commission', label: 'Commission' },
-  { value: 'exceptionnel', label: 'Intervention Exceptionnelle' },
+  { value: 'intervention', label: 'Intervention' },
+  { value: 'ponctuelle', label: 'Ponctuelle' },
+  { value: 'exceptionnel', label: 'Exceptionnelle' },
 ];
 
 const ASTR_DEPARTMENTS = ['BBS', 'DO', 'DSI', 'DT'];

@@ -8,6 +8,9 @@ const BONUS_TYPES = [
   { value: 'mensuel', label: 'Mensuel' },
   { value: 'astreinte', label: 'Astreinte' },
   { value: 'commission', label: 'Commission' },
+];
+
+const INTERV_TYPES = [
   { value: 'intervention', label: 'Intervention' },
   { value: 'ponctuelle', label: 'Ponctuelle' },
   { value: 'exceptionnel', label: 'Exceptionnelle' },
@@ -27,6 +30,8 @@ const PlafondsPage = () => {
   const [rateModalDept, setRateModalDept] = useState('');
   const [rateModalValue, setRateModalValue] = useState('');
   const [rateModalSelected, setRateModalSelected] = useState([]);
+  const [editingCell, setEditingCell] = useState(null);
+  const [editValue, setEditValue] = useState('');
 
   const fetchPlafonds = async () => {
     try {
@@ -125,6 +130,23 @@ const PlafondsPage = () => {
     setEditing(null);
     setForm({ department: user?.department || 'Clientèle', bonus_type: 'mensuel', amount: '' });
     setShowForm(true);
+  };
+
+  const handleCellSave = async (department, type) => {
+    const amount = parseFloat(editValue);
+    if (isNaN(amount) || amount <= 0) { setEditingCell(null); return; }
+    const existing = plafonds.find(p => p.department === department && p.bonus_type === type);
+    try {
+      if (existing) {
+        await updatePrimeMax(existing.id, { department, bonus_type: type, amount });
+      } else {
+        await createPrimeMax({ department, bonus_type: type, amount });
+      }
+      fetchPlafonds();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Erreur lors de la sauvegarde');
+    }
+    setEditingCell(null);
   };
 
   if (loading) {
@@ -242,6 +264,54 @@ const PlafondsPage = () => {
             </div>
           );
         })}
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-5 py-3 font-semibold text-sm bg-rose-50 text-rose-600 border-b border-rose-200 flex items-center gap-2">
+          <MoonIcon className="w-4 h-4" /> Interventions
+          <span className="text-xs font-normal text-rose-400">— Taux par type d'intervention</span>
+        </div>
+        <table className="table table-zebra w-full">
+          <thead>
+            <tr>
+              <th>Département</th>
+              {INTERV_TYPES.map(t => <th key={t.value}>{t.label} (Ar)</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {ASTR_DEPARTMENTS.map((dept) => {
+              const canEditDept = user?.is_dg || user?.is_drh || dept === user?.department;
+              return (
+                <tr key={dept}>
+                  <td className="font-medium text-gray-900">{dept}</td>
+                  {INTERV_TYPES.map((t) => {
+                    const plafond = plafonds.find(p => p.department === dept && p.bonus_type === t.value);
+                    const isEditing = editingCell?.department === dept && editingCell?.type === t.value;
+                    return (
+                      <td key={t.value}>
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <input type="number" value={editValue} onChange={(e) => setEditValue(e.target.value)}
+                              className="w-24 px-2 py-1 rounded border border-gray-300 text-sm text-center focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleCellSave(dept, t.value); if (e.key === 'Escape') setEditingCell(null); }}
+                              autoFocus />
+                            <button onClick={() => handleCellSave(dept, t.value)} className="text-green-600 hover:text-green-800 text-sm font-bold">✓</button>
+                            <button onClick={() => setEditingCell(null)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+                          </div>
+                        ) : (
+                          <span onClick={() => { if (canEditDept) { setEditingCell({ department: dept, type: t.value }); setEditValue(plafond ? parseFloat(plafond.amount).toString() : ''); } }}
+                            className={`${canEditDept ? 'cursor-pointer hover:bg-rose-50 px-2 py-1 rounded' : 'text-gray-400'} inline-block`}>
+                            {plafond ? `${parseFloat(plafond.amount).toLocaleString('fr-FR')} Ar` : '—'}
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {(user?.is_dg || user?.is_drh) && (

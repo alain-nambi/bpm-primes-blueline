@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { getPrimeMax, createPrimeMax, updatePrimeMax, deletePrimeMax, getEmployees, updateEmployee } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { PlusIcon, XCircleIcon, LockIcon, MoonIcon, CheckIcon } from '../components/Icons';
+import { CalendarIcon, MoonIcon, ChartIcon, XCircleIcon, LockIcon, CheckIcon } from '../components/Icons';
 import Modal from '../components/Modal';
 
 const BONUS_TYPES = [
-  { value: 'mensuel', label: 'Mensuel' },
-  { value: 'astreinte', label: 'Astreinte' },
-  { value: 'commission', label: 'Commission' },
+  { value: 'mensuel', label: 'Mensuel', icon: CalendarIcon, color: 'blue' },
+  { value: 'astreinte', label: 'Astreinte', icon: MoonIcon, color: 'violet' },
+  { value: 'commission', label: 'Commission', icon: ChartIcon, color: 'amber' },
 ];
 
 const INTERV_TYPES = [
@@ -17,6 +17,13 @@ const INTERV_TYPES = [
 ];
 
 const ASTR_DEPARTMENTS = ['BBS', 'DO', 'DSI', 'DT'];
+
+const typeColors = {
+  blue: { header: 'bg-blue-50 text-blue-700 border-blue-200', badge: 'bg-blue-100 text-blue-600' },
+  violet: { header: 'bg-violet-50 text-violet-700 border-violet-200', badge: 'bg-violet-100 text-violet-600' },
+  amber: { header: 'bg-amber-50 text-amber-700 border-amber-200', badge: 'bg-amber-100 text-amber-600' },
+  rose: { header: 'bg-rose-50 text-rose-700 border-rose-200', badge: 'bg-rose-100 text-rose-600' },
+};
 
 const PlafondsPage = () => {
   const { user } = useAuth();
@@ -119,11 +126,7 @@ const PlafondsPage = () => {
     setEditValue(plafond ? parseFloat(plafond.amount).toString() : '');
   };
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-64"><span className="loading loading-spinner loading-lg" /></div>;
-  }
-
-  const renderCell = (dept, type, colorRing = 'rose') => {
+  const renderCell = (dept, type) => {
     const canEditDept = user?.is_dg || user?.is_drh || dept === user?.department;
     const plafond = plafonds.find(p => p.department === dept && p.bonus_type === type);
     const isEditing = editingCell?.department === dept && editingCell?.type === type;
@@ -131,7 +134,7 @@ const PlafondsPage = () => {
       return (
         <div className="flex items-center gap-1">
           <input type="number" value={editValue} onChange={(e) => setEditValue(e.target.value)}
-            className="w-24 px-2 py-1 rounded border border-gray-300 text-sm text-center focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+            className="w-24 px-2 py-1 rounded border border-gray-300 text-sm text-center focus:outline-none focus:ring-2 focus:ring-violet-500/30"
             onKeyDown={(e) => { if (e.key === 'Enter') handleCellSave(dept, type); if (e.key === 'Escape') setEditingCell(null); }}
             autoFocus />
           <button onClick={() => handleCellSave(dept, type)} className="text-green-600 hover:text-green-800 text-sm font-bold">✓</button>
@@ -141,121 +144,161 @@ const PlafondsPage = () => {
     }
     return (
       <span onClick={() => { if (canEditDept) openCellEdit(dept, type); }}
-        className={`${canEditDept ? 'cursor-pointer hover:bg-rose-50 px-2 py-1 rounded' : 'text-gray-400'} inline-block`}>
-        {plafond ? `${parseFloat(plafond.amount).toLocaleString('fr-FR')} Ar` : '—'}
+        className={`${canEditDept ? 'cursor-pointer hover:bg-violet-50 px-2 py-1 rounded' : 'text-gray-400'} inline-block transition-colors`}>
+        {plafond ? (
+          <span className="font-medium">{parseFloat(plafond.amount).toLocaleString('fr-FR')} <span className="text-gray-400 font-normal">Ar</span></span>
+        ) : (
+          <span className="text-gray-300 italic">—</span>
+        )}
       </span>
     );
   };
 
+  const SectionCard = ({ color, icon: Icon, title, subtitle, children }) => {
+    const c = typeColors[color] || typeColors.blue;
+    return (
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className={`px-4 py-2 flex items-center gap-2 border-b ${c.header}`}>
+          {Icon && <Icon className="w-4 h-4" />}
+          <span className="font-semibold text-sm">{title}</span>
+          {subtitle && <span className="text-xs font-normal opacity-60">— {subtitle}</span>}
+        </div>
+        {children}
+      </div>
+    );
+  };
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-48"><span className="loading loading-spinner loading-md" /></div>;
+  }
+
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Plafonds des Primes</h1>
-        <p className="text-sm text-gray-400 mt-1">{user?.is_dg || user?.is_drh ? 'Accès total — vous pouvez modifier tous les plafonds' : `Vous ne pouvez modifier que les plafonds de votre département (${user?.department})`}</p>
+    <div className="max-w-6xl mx-auto">
+      <div className="mb-4">
+        <h1 className="text-xl font-bold text-gray-900">Plafonds des Primes</h1>
+        <p className="text-sm text-gray-400">
+          {user?.is_dg || user?.is_drh
+            ? 'Accès total — vous pouvez modifier tous les plafonds'
+            : `Vous ne pouvez modifier que les plafonds de votre département (${user?.department})`}
+        </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-3">
         {BONUS_TYPES.map((bt) => {
-          const items = plafonds.filter(p => p.bonus_type === bt.value);
+          const items = plafonds.filter(p => p.bonus_type === bt.value).sort((a, b) => a.department.localeCompare(b.department));
           if (items.length === 0) return null;
-          const typeColors = { mensuel: 'bg-blue-50 text-blue-600 border-blue-200', astreinte: 'bg-violet-50 text-violet-600 border-violet-200', commission: 'bg-amber-50 text-amber-600 border-amber-200' };
-          const color = typeColors[bt.value] || typeColors.mensuel;
+          const chunked = items.reduce((acc, _, i) => i % 2 === 0 ? [...acc, items.slice(i, i + 2)] : acc, []);
           return (
-            <div key={bt.value} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div className={`px-5 py-3 font-semibold text-sm border-b ${color}`}>
-                {bt.label} — {items.length} département{items.length !== 1 ? 's' : ''}
-              </div>
-              <table className="table table-zebra w-full">
+            <SectionCard key={bt.value} color={bt.color} icon={bt.icon}
+              title={bt.label} subtitle={`${items.length} département${items.length !== 1 ? 's' : ''}`}>
+              <table className="table table-sm table-zebra w-full">
                 <thead>
                   <tr>
-                    <th>Département</th>
-                    <th>Montant max (Ar)</th>
-                    <th className="w-16">Actions</th>
+                    <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Département</th>
+                    <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Montant max</th>
+                    <th className="border-l-2 border-gray-200 text-gray-500 font-medium text-xs uppercase tracking-wider">Département</th>
+                    <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Montant max</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((p) => (
-                    <tr key={p.id} className={!canEdit(p) ? 'opacity-60' : ''}>
-                      <td className="font-medium text-gray-900">{p.department}</td>
-                      <td>{renderCell(p.department, p.bonus_type)}</td>
-                      <td>
-                        {canEdit(p) ? (
-                          <button className="btn btn-sm btn-ghost text-red-500" title="Supprimer" onClick={() => handleDelete(p.id)}>
-                            <XCircleIcon className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <span className="text-xs text-gray-400 px-2"><LockIcon className="w-3 h-3 inline" /></span>
-                        )}
+                  {chunked.map((pair, i) => (
+                    <tr key={i} className="hover">
+                      <td className="font-medium text-gray-900">{pair[0].department}</td>
+                      <td className={!canEdit(pair[0]) ? 'opacity-50' : ''}>
+                        <div className="flex items-center justify-between gap-1">
+                          {renderCell(pair[0].department, pair[0].bonus_type)}
+                          {canEdit(pair[0]) ? (
+                            <button className="text-gray-300 hover:text-red-500 transition-colors" title="Supprimer" onClick={() => handleDelete(pair[0].id)}>
+                              <XCircleIcon className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <span className="text-gray-200"><LockIcon className="w-3 h-3 inline" /></span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="border-l-2 border-gray-200 font-medium text-gray-900">{pair[1]?.department ?? ''}</td>
+                      <td className={pair[1] && !canEdit(pair[1]) ? 'opacity-50' : ''}>
+                        {pair[1] ? (
+                          <div className="flex items-center justify-between gap-1">
+                            {renderCell(pair[1].department, pair[1].bonus_type)}
+                            {canEdit(pair[1]) ? (
+                              <button className="text-gray-300 hover:text-red-500 transition-colors" title="Supprimer" onClick={() => handleDelete(pair[1].id)}>
+                                <XCircleIcon className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <span className="text-gray-200"><LockIcon className="w-3 h-3 inline" /></span>
+                            )}
+                          </div>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </SectionCard>
           );
         })}
-      </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 font-semibold text-sm bg-rose-50 text-rose-600 border-b border-rose-200 flex items-center gap-2">
-          <MoonIcon className="w-4 h-4" /> Interventions
-          <span className="text-xs font-normal text-rose-400">— Taux par type d'intervention</span>
-        </div>
-        <table className="table table-zebra w-full">
-          <thead>
-            <tr>
-              <th>Département</th>
-              {INTERV_TYPES.map(t => <th key={t.value}>{t.label} (Ar)</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {ASTR_DEPARTMENTS.map((dept) => (
-              <tr key={dept}>
-                <td className="font-medium text-gray-900">{dept}</td>
-                {INTERV_TYPES.map((t) => <td key={t.value}>{renderCell(dept, t.value)}</td>)}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {(user?.is_dg || user?.is_drh) && (
-        <div className="mt-10 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 font-semibold text-sm bg-violet-50 text-violet-600 border-b border-violet-200 flex items-center gap-2">
-            <MoonIcon className="w-4 h-4" /> Astreinte — Taux spéciaux
-            <span className="text-xs font-normal text-violet-400">— Configurer un taux personnalisé par département</span>
-          </div>
-          <table className="table table-zebra w-full">
+        <SectionCard color="rose" icon={MoonIcon}
+          title="Interventions" subtitle="Taux par type d'intervention — BBS, DO, DSI, DT">
+          <table className="table table-sm table-zebra w-full">
             <thead>
               <tr>
-                <th>Département</th>
-                <th>Employés avec taux spécial</th>
-                <th className="w-40">Actions</th>
+                <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Département</th>
+                {INTERV_TYPES.map(t => (
+                  <th key={t.value} className="text-gray-500 font-medium text-xs uppercase tracking-wider">{t.label}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {ASTR_DEPARTMENTS.map((dept) => {
-                const deptEmps = astrEmployees.filter(e => e.department === dept);
-                const specials = deptEmps.filter(e => e.astreinte_rate != null);
-                return (
-                  <tr key={dept}>
-                    <td className="font-medium text-gray-900">{dept}</td>
-                    <td className="text-sm text-gray-500">
-                      {specials.length === 0
-                        ? <span className="text-gray-400">Aucun</span>
-                        : specials.map(e => `${e.name} (${e.astreinte_rate.toLocaleString('fr-FR')} Ar)`).join(', ')
-                      }
-                    </td>
-                    <td>
-                      <button onClick={() => openRateModal(dept)} className="btn btn-sm bg-violet-600 hover:bg-violet-700 text-white border-0">Configurer</button>
-                    </td>
-                  </tr>
-                );
-              })}
+              {ASTR_DEPARTMENTS.map((dept) => (
+                <tr key={dept}>
+                  <td className="font-medium text-gray-900">{dept}</td>
+                  {INTERV_TYPES.map((t) => <td key={t.value}>{renderCell(dept, t.value)}</td>)}
+                </tr>
+              ))}
             </tbody>
           </table>
-        </div>
-      )}
+        </SectionCard>
+
+        {(user?.is_dg || user?.is_drh) && (
+          <SectionCard color="violet" icon={MoonIcon}
+            title="Astreinte — Taux spéciaux" subtitle="Configurer un taux personnalisé par département">
+            <table className="table table-sm table-zebra w-full">
+              <thead>
+                <tr>
+                  <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Département</th>
+                  <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Employés avec taux spécial</th>
+                  <th className="w-32"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {ASTR_DEPARTMENTS.map((dept) => {
+                  const deptEmps = astrEmployees.filter(e => e.department === dept);
+                  const specials = deptEmps.filter(e => e.astreinte_rate != null);
+                  return (
+                    <tr key={dept}>
+                      <td className="font-medium text-gray-900">{dept}</td>
+                      <td className="text-sm text-gray-500">
+                        {specials.length === 0
+                          ? <span className="text-gray-400 italic">Aucun</span>
+                          : specials.map(e => `${e.name} (${e.astreinte_rate.toLocaleString('fr-FR')} Ar)`).join(', ')
+                        }
+                      </td>
+                      <td>
+                        <button onClick={() => openRateModal(dept)}
+                          className="btn btn-xs bg-violet-600 hover:bg-violet-700 text-white border-0">
+                          Configurer
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </SectionCard>
+        )}
+      </div>
 
       <Modal open={showRateModal} onClose={() => setShowRateModal(false)} title={`Configurer — ${rateModalDept}`} size="lg">
         <div className="space-y-4">
@@ -270,24 +313,28 @@ const PlafondsPage = () => {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs text-gray-400">{rateModalSelected.length} employé(s) sélectionné(s)</span>
               <div className="flex gap-2">
-                <button type="button" onClick={() => setRateModalSelected(astrEmployees.filter(e => e.department === rateModalDept).map(e => e.id))} className="btn btn-xs btn-ghost text-violet-600">Tout sélectionner</button>
-                <button type="button" onClick={() => setRateModalSelected([])} className="btn btn-xs btn-ghost text-gray-500">Tout désélectionner</button>
+                <button type="button" onClick={() => setRateModalSelected(astrEmployees.filter(e => e.department === rateModalDept).map(e => e.id))}
+                  className="btn btn-xs btn-ghost text-violet-600">Tout sélectionner</button>
+                <button type="button" onClick={() => setRateModalSelected([])}
+                  className="btn btn-xs btn-ghost text-gray-500">Tout désélectionner</button>
               </div>
             </div>
             <div className="space-y-1 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-2">
               {astrEmployees.filter(e => e.department === rateModalDept).map(emp => (
-                <label key={emp.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${rateModalSelected.includes(emp.id) ? 'bg-violet-50 border border-violet-200' : 'hover:bg-gray-50 border border-transparent'}`}>
+                <label key={emp.id}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${rateModalSelected.includes(emp.id) ? 'bg-violet-50 border border-violet-200' : 'hover:bg-gray-50 border border-transparent'}`}>
                   <input type="checkbox" checked={rateModalSelected.includes(emp.id)} onChange={() => toggleRateSelected(emp.id)}
                     className="checkbox checkbox-sm checkbox-violet-600" />
                   <span className="flex-1 text-sm font-medium">{emp.name}</span>
-                  {emp.astreinte_rate != null && <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">Actuel: {emp.astreinte_rate.toLocaleString('fr-FR')} Ar</span>}
+                  {emp.astreinte_rate != null &&
+                    <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">Actuel: {emp.astreinte_rate.toLocaleString('fr-FR')} Ar</span>}
                 </label>
               ))}
             </div>
           </div>
-          <div className="flex gap-3 justify-end pt-2">
+          <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
             <button onClick={() => setShowRateModal(false)} className="btn btn-sm btn-ghost">Annuler</button>
-            <button onClick={applyRate} className="btn btn-sm bg-violet-600 hover:bg-violet-700 text-white border-0 flex items-center gap-1">
+            <button onClick={applyRate} className="btn btn-sm bg-violet-600 hover:bg-violet-700 text-white border-0 flex items-center gap-1 shadow-sm hover:shadow">
               <CheckIcon className="w-4 h-4" /> Appliquer
             </button>
           </div>

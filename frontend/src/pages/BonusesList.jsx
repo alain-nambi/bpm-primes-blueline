@@ -39,10 +39,11 @@ const BonusesList = () => {
     const v = new URLSearchParams(window.location.search).get('view');
     return v === 'status' || v === 'date' ? v : 'date';
   });
-  const [typeFilter, setTypeFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState(() => new URLSearchParams(window.location.search).get('status') || '');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterMonth, setFilterMonth] = useState('');
+const [typeFilter, setTypeFilter] = useState('');
+const [statusFilter, setStatusFilter] = useState(() => new URLSearchParams(window.location.search).get('status') || '');
+const [searchQuery, setSearchQuery] = useState('');
+const [depFilter, setDepFilter] = useState('');
+const [filterMonth, setFilterMonth] = useState('');
   const [filterYear, setFilterYear] = useState('');
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState(null);
@@ -180,6 +181,7 @@ const BonusesList = () => {
       if (typeFilter && b.bonus_type !== typeFilter) return false;
       if (statusFilter === 'Prime rejetée') { if (!b.was_rejected) return false; }
       else if (statusFilter && b.status !== statusFilter) return false;
+      if (depFilter && b.employee?.department !== depFilter) return false;
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
         const name = b.employee?.name?.toLowerCase() || '';
@@ -201,7 +203,12 @@ const BonusesList = () => {
       }
       return true;
     });
-  }, [bonuses, typeFilter, statusFilter, searchQuery, filterMonth, filterYear]);
+  }, [bonuses, typeFilter, statusFilter, depFilter, searchQuery, filterMonth, filterYear]);
+
+  const departments = useMemo(() => {
+    const deps = new Set(bonuses.map(b => b.employee?.department).filter(Boolean));
+    return [...deps].sort();
+  }, [bonuses]);
 
   const grouped = useMemo(() => {
     const result = {};
@@ -346,6 +353,13 @@ const BonusesList = () => {
         <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Rechercher un employé..."
           className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 w-48" />
+        {(user?.is_dg || user?.is_drh) && (
+          <select value={depFilter} onChange={(e) => setDepFilter(e.target.value)}
+            className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
+            <option value="">Tous départements</option>
+            {departments.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        )}
         <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}
           className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500">
           <option value="">Mois</option>
@@ -609,6 +623,7 @@ const BonusesList = () => {
                 if (statusFilter === 'Prime rejetée') p.set('was_rejected', 'true')
                 else if (statusFilter) p.set('status', statusFilter)
                 if (searchQuery) p.set('search', searchQuery)
+                if (depFilter) p.set('department', depFilter)
                 if (filterYear) {
                   if (filterMonth) {
                     const lastDay = new Date(parseInt(filterYear), parseInt(filterMonth), 0).getDate()

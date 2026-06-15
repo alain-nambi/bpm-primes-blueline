@@ -8,6 +8,7 @@ import BonusForm from './pages/BonusForm'
 import BonusTypeSelect from './pages/BonusTypeSelect'
 import BonusDetail from './pages/BonusDetail'
 import PlafondsPage from './pages/PlafondsPage'
+import ValidatedBonuses from './pages/ValidatedBonuses'
 import Employees from './pages/Employees'
 import Login from './pages/Login'
 import SignUp from './pages/SignUp'
@@ -35,6 +36,7 @@ function AppContent() {
       <Route path="/bonuses/:id" element={<ProtectedRoute><BonusDetail /></ProtectedRoute>} />
       <Route path="/bonuses/edit/:id" element={<ProtectedRoute><BonusForm /></ProtectedRoute>} />
       <Route path="/kanban/:type" element={<ProtectedRoute><BonusKanban /></ProtectedRoute>} />
+      <Route path="/validated" element={<ProtectedRoute><ValidatedBonuses /></ProtectedRoute>} />
       <Route path="/employees" element={<ProtectedRoute><Employees /></ProtectedRoute>} />
       <Route path="/settings/primemax" element={<ProtectedRoute><PlafondsPage /></ProtectedRoute>} />
     </Routes>

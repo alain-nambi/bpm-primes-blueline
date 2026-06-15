@@ -32,8 +32,8 @@ const PlafondsPage = () => {
   const [astrEmployees, setAstrEmployees] = useState([]);
   const [showRateModal, setShowRateModal] = useState(false);
   const [rateModalDept, setRateModalDept] = useState('');
-  const [rateModalValue, setRateModalValue] = useState('');
-  const [rateModalSelected, setRateModalSelected] = useState([]);
+  const [rateModalValues, setRateModalValues] = useState({});
+  const [rateModalInitial, setRateModalInitial] = useState([]);
   const [editingCell, setEditingCell] = useState(null);
   const [editValue, setEditValue] = useState('');
 
@@ -59,19 +59,27 @@ const PlafondsPage = () => {
 
   const openRateModal = (dept) => {
     setRateModalDept(dept);
-    setRateModalValue('');
-    if (rateModalDept !== dept) setRateModalSelected([]);
+    const values = {};
+    astrEmployees.filter(e => e.department === dept).forEach(e => {
+      if (e.astreinte_rate != null) values[e.id] = e.astreinte_rate.toString();
+    });
+    setRateModalValues(values);
+    setRateModalInitial(astrEmployees.filter(e => e.department === dept && e.astreinte_rate != null).map(e => e.id));
     setShowRateModal(true);
   };
 
-  const toggleRateSelected = (id) => {
-    setRateModalSelected(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
   const applyRate = async () => {
-    const rate = rateModalValue === '' ? null : parseInt(rateModalValue);
     const deptEmps = astrEmployees.filter(e => e.department === rateModalDept);
-    await Promise.all(deptEmps.map(e => updateEmployee(e.id, { astreinte_rate: rateModalSelected.includes(e.id) ? rate : null })));
+    await Promise.all(deptEmps.map(e => {
+      const val = rateModalValues[e.id];
+      if (val !== undefined && val !== '') {
+        return updateEmployee(e.id, { astreinte_rate: parseInt(val) });
+      }
+      if (val !== undefined && val === '' && rateModalInitial.includes(e.id)) {
+        return updateEmployee(e.id, { astreinte_rate: null });
+      }
+      return Promise.resolve();
+    }));
     setShowRateModal(false);
     fetchAstrEmployees();
   };
@@ -300,37 +308,50 @@ const PlafondsPage = () => {
         )}
       </div>
 
-      <Modal open={showRateModal} onClose={() => setShowRateModal(false)} title={`Configurer — ${rateModalDept}`} size="lg">
-        <div className="space-y-4">
-          <div>
-            <label className="label"><span className="label-text font-medium">Taux spécial (Ar/semaine)</span></label>
-            <input type="number" value={rateModalValue} onChange={(e) => setRateModalValue(e.target.value)}
-              placeholder="70000 (défaut)"
-              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500" />
+      <Modal open={showRateModal} onClose={() => setShowRateModal(false)} title={`Taux spéciaux — ${rateModalDept}`} size="lg">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <input type="number" id="bulkRate" placeholder="Taux commun"
+              className="w-28 px-2 py-1 rounded border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-violet-500/30" />
+            <button onClick={() => {
+              const v = document.getElementById('bulkRate').value;
+              if (!v) return;
+              setRateModalValues(prev => {
+                const next = { ...prev };
+                astrEmployees.filter(e => e.department === rateModalDept).forEach(e => {
+                  if (!next[e.id] || next[e.id] === '') next[e.id] = v;
+                });
+                return next;
+              });
+              document.getElementById('bulkRate').value = '';
+            }} className="btn btn-xs bg-violet-100 text-violet-700 hover:bg-violet-200 border-0">Remplir les vides</button>
+            <button onClick={() => {
+              setRateModalValues(prev => {
+                const next = { ...prev };
+                astrEmployees.filter(e => e.department === rateModalDept).forEach(e => { next[e.id] = ''; });
+                return next;
+              });
+            }} className="btn btn-xs btn-ghost text-gray-500">Tout effacer</button>
           </div>
-          <div>
-            <label className="label"><span className="label-text font-medium">Appliquer à :</span></label>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-400">{rateModalSelected.length} employé(s) sélectionné(s)</span>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setRateModalSelected(astrEmployees.filter(e => e.department === rateModalDept).map(e => e.id))}
-                  className="btn btn-xs btn-ghost text-violet-600">Tout sélectionner</button>
-                <button type="button" onClick={() => setRateModalSelected([])}
-                  className="btn btn-xs btn-ghost text-gray-500">Tout désélectionner</button>
-              </div>
-            </div>
-            <div className="space-y-1 max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-2">
-              {astrEmployees.filter(e => e.department === rateModalDept).map(emp => (
-                <label key={emp.id}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${rateModalSelected.includes(emp.id) ? 'bg-violet-50 border border-violet-200' : 'hover:bg-gray-50 border border-transparent'}`}>
-                  <input type="checkbox" checked={rateModalSelected.includes(emp.id)} onChange={() => toggleRateSelected(emp.id)}
-                    className="checkbox checkbox-sm checkbox-violet-600" />
-                  <span className="flex-1 text-sm font-medium">{emp.name}</span>
-                  {emp.astreinte_rate != null &&
-                    <span className="text-xs text-violet-600 bg-violet-100 px-2 py-0.5 rounded">Actuel: {emp.astreinte_rate.toLocaleString('fr-FR')} Ar</span>}
-                </label>
-              ))}
-            </div>
+          <div className="space-y-1 max-h-72 overflow-y-auto border border-gray-200 rounded-lg p-1">
+            {astrEmployees.filter(e => e.department === rateModalDept).map(emp => {
+              const val = rateModalValues[emp.id];
+              const hasVal = val !== undefined && val !== '';
+              return (
+                <div key={emp.id}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${hasVal ? 'bg-violet-50 border border-violet-200' : 'hover:bg-gray-50 border border-transparent'}`}>
+                  <span className="text-sm font-medium flex-1">{emp.name}</span>
+                  <input type="number" value={val || ''}
+                    onChange={(e) => setRateModalValues(prev => ({ ...prev, [emp.id]: e.target.value }))}
+                    placeholder="Défaut"
+                    className="w-24 px-2 py-1 rounded border border-gray-200 text-sm text-center focus:outline-none focus:ring-2 focus:ring-violet-500/30 focus:border-violet-500" />
+                  {val === '' && emp.astreinte_rate != null &&
+                    <span className="text-xs text-red-400 w-16 text-right">effacé</span>}
+                  {hasVal &&
+                    <span className="text-xs text-violet-600 w-16 text-right">{parseInt(val).toLocaleString('fr-FR')} Ar</span>}
+                </div>
+              );
+            })}
           </div>
           <div className="flex gap-3 justify-end pt-2 border-t border-gray-100">
             <button onClick={() => setShowRateModal(false)} className="btn btn-sm btn-ghost">Annuler</button>

@@ -1,29 +1,19 @@
 import { useEffect, useState } from 'react';
 import { getPrimeMax, createPrimeMax, updatePrimeMax, deletePrimeMax, getEmployees, updateEmployee } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import { CalendarIcon, MoonIcon, ChartIcon, XCircleIcon, LockIcon, CheckIcon } from '../components/Icons';
+import { MoonIcon, CheckIcon, XCircleIcon, LockIcon } from '../components/Icons';
 import Modal from '../components/Modal';
 
-const BONUS_TYPES = [
-  { value: 'mensuel', label: 'Mensuel', icon: CalendarIcon, color: 'blue' },
-  { value: 'astreinte', label: 'Astreinte', icon: MoonIcon, color: 'violet' },
-  { value: 'commission', label: 'Commission', icon: ChartIcon, color: 'amber' },
-];
-
-const INTERV_TYPES = [
+const ALL_TYPES = [
+  { value: 'mensuel', label: 'Mensuel' },
+  { value: 'astreinte', label: 'Astreinte' },
+  { value: 'commission', label: 'Commission' },
   { value: 'intervention', label: 'Intervention' },
   { value: 'ponctuelle', label: 'Ponctuelle' },
   { value: 'exceptionnel', label: 'Exceptionnelle' },
 ];
 
 const ASTR_DEPARTMENTS = ['BBS', 'DO', 'DSI', 'DT'];
-
-const typeColors = {
-  blue: { header: 'bg-blue-50 text-blue-700 border-blue-200', badge: 'bg-blue-100 text-blue-600' },
-  violet: { header: 'bg-violet-50 text-violet-700 border-violet-200', badge: 'bg-violet-100 text-violet-600' },
-  amber: { header: 'bg-amber-50 text-amber-700 border-amber-200', badge: 'bg-amber-100 text-amber-600' },
-  rose: { header: 'bg-rose-50 text-rose-700 border-rose-200', badge: 'bg-rose-100 text-rose-600' },
-};
 
 const PlafondsPage = () => {
   const { user } = useAuth();
@@ -55,33 +45,6 @@ const PlafondsPage = () => {
     } catch (err) {
       console.error(err);
     }
-  };
-
-  const openRateModal = (dept) => {
-    setRateModalDept(dept);
-    const values = {};
-    astrEmployees.filter(e => e.department === dept).forEach(e => {
-      if (e.astreinte_rate != null) values[e.id] = e.astreinte_rate.toString();
-    });
-    setRateModalValues(values);
-    setRateModalInitial(astrEmployees.filter(e => e.department === dept && e.astreinte_rate != null).map(e => e.id));
-    setShowRateModal(true);
-  };
-
-  const applyRate = async () => {
-    const deptEmps = astrEmployees.filter(e => e.department === rateModalDept);
-    await Promise.all(deptEmps.map(e => {
-      const val = rateModalValues[e.id];
-      if (val !== undefined && val !== '') {
-        return updateEmployee(e.id, { astreinte_rate: parseInt(val) });
-      }
-      if (val !== undefined && val === '' && rateModalInitial.includes(e.id)) {
-        return updateEmployee(e.id, { astreinte_rate: null });
-      }
-      return Promise.resolve();
-    }));
-    setShowRateModal(false);
-    fetchAstrEmployees();
   };
 
   useEffect(() => {
@@ -134,46 +97,33 @@ const PlafondsPage = () => {
     setEditValue(plafond ? parseFloat(plafond.amount).toString() : '');
   };
 
-  const renderCell = (dept, type) => {
-    const canEditDept = user?.is_dg || user?.is_drh || dept === user?.department;
-    const plafond = plafonds.find(p => p.department === dept && p.bonus_type === type);
-    const isEditing = editingCell?.department === dept && editingCell?.type === type;
-    if (isEditing) {
-      return (
-        <div className="flex items-center gap-1">
-          <input type="number" value={editValue} onChange={(e) => setEditValue(e.target.value)}
-            className="w-24 px-2 py-1 rounded border border-gray-300 text-sm text-center focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-            onKeyDown={(e) => { if (e.key === 'Enter') handleCellSave(dept, type); if (e.key === 'Escape') setEditingCell(null); }}
-            autoFocus />
-          <button onClick={() => handleCellSave(dept, type)} className="text-green-600 hover:text-green-800 text-sm font-bold">✓</button>
-          <button onClick={() => setEditingCell(null)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
-        </div>
-      );
-    }
-    return (
-      <span onClick={() => { if (canEditDept) openCellEdit(dept, type); }}
-        className={`${canEditDept ? 'cursor-pointer hover:bg-violet-50 px-2 py-1 rounded' : 'text-gray-400'} inline-block transition-colors`}>
-        {plafond ? (
-          <span className="font-medium">{parseFloat(plafond.amount).toLocaleString('fr-FR')} <span className="text-gray-400 font-normal">Ar</span></span>
-        ) : (
-          <span className="text-gray-300 italic">—</span>
-        )}
-      </span>
-    );
+  const departments = [...new Set(plafonds.map(p => p.department))].sort();
+
+  const openRateModal = (dept) => {
+    setRateModalDept(dept);
+    const values = {};
+    astrEmployees.filter(e => e.department === dept).forEach(e => {
+      if (e.astreinte_rate != null) values[e.id] = e.astreinte_rate.toString();
+    });
+    setRateModalValues(values);
+    setRateModalInitial(astrEmployees.filter(e => e.department === dept && e.astreinte_rate != null).map(e => e.id));
+    setShowRateModal(true);
   };
 
-  const SectionCard = ({ color, icon: Icon, title, subtitle, children }) => {
-    const c = typeColors[color] || typeColors.blue;
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className={`px-4 py-2 flex items-center gap-2 border-b ${c.header}`}>
-          {Icon && <Icon className="w-4 h-4" />}
-          <span className="font-semibold text-sm">{title}</span>
-          {subtitle && <span className="text-xs font-normal opacity-60">— {subtitle}</span>}
-        </div>
-        {children}
-      </div>
-    );
+  const applyRate = async () => {
+    const deptEmps = astrEmployees.filter(e => e.department === rateModalDept);
+    await Promise.all(deptEmps.map(e => {
+      const val = rateModalValues[e.id];
+      if (val !== undefined && val !== '') {
+        return updateEmployee(e.id, { astreinte_rate: parseInt(val) });
+      }
+      if (val !== undefined && val === '' && rateModalInitial.includes(e.id)) {
+        return updateEmployee(e.id, { astreinte_rate: null });
+      }
+      return Promise.resolve();
+    }));
+    setShowRateModal(false);
+    fetchAstrEmployees();
   };
 
   if (loading) {
@@ -186,98 +136,88 @@ const PlafondsPage = () => {
         <h1 className="text-xl font-bold text-gray-900">Plafonds des Primes</h1>
         <p className="text-sm text-gray-400">
           {user?.is_dg || user?.is_drh
-            ? 'Accès total — vous pouvez modifier tous les plafonds'
+            ? 'Accès total — cliquer un montant pour le modifier'
             : `Vous ne pouvez modifier que les plafonds de votre département (${user?.department})`}
         </p>
       </div>
 
       <div className="space-y-3">
-        {BONUS_TYPES.map((bt) => {
-          const items = plafonds.filter(p => p.bonus_type === bt.value).sort((a, b) => a.department.localeCompare(b.department));
-          if (items.length === 0) return null;
-          const chunked = items.reduce((acc, _, i) => i % 2 === 0 ? [...acc, items.slice(i, i + 2)] : acc, []);
-          return (
-            <SectionCard key={bt.value} color={bt.color} icon={bt.icon}
-              title={bt.label} subtitle={`${items.length} département${items.length !== 1 ? 's' : ''}`}>
-              <table className="table table-sm table-zebra w-full">
-                <thead>
-                  <tr>
-                    <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Département</th>
-                    <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Montant max</th>
-                    <th className="border-l-2 border-gray-200 text-gray-500 font-medium text-xs uppercase tracking-wider">Département</th>
-                    <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Montant max</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {chunked.map((pair, i) => (
-                    <tr key={i} className="hover">
-                      <td className="font-medium text-gray-900">{pair[0].department}</td>
-                      <td className={!canEdit(pair[0]) ? 'opacity-50' : ''}>
-                        <div className="flex items-center justify-between gap-1">
-                          {renderCell(pair[0].department, pair[0].bonus_type)}
-                          {canEdit(pair[0]) ? (
-                            <button className="text-gray-300 hover:text-red-500 transition-colors" title="Supprimer" onClick={() => handleDelete(pair[0].id)}>
-                              <XCircleIcon className="w-3.5 h-3.5" />
-                            </button>
-                          ) : (
-                            <span className="text-gray-200"><LockIcon className="w-3 h-3 inline" /></span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="border-l-2 border-gray-200 font-medium text-gray-900">{pair[1]?.department ?? ''}</td>
-                      <td className={pair[1] && !canEdit(pair[1]) ? 'opacity-50' : ''}>
-                        {pair[1] ? (
-                          <div className="flex items-center justify-between gap-1">
-                            {renderCell(pair[1].department, pair[1].bonus_type)}
-                            {canEdit(pair[1]) ? (
-                              <button className="text-gray-300 hover:text-red-500 transition-colors" title="Supprimer" onClick={() => handleDelete(pair[1].id)}>
-                                <XCircleIcon className="w-3.5 h-3.5" />
-                              </button>
-                            ) : (
-                              <span className="text-gray-200"><LockIcon className="w-3 h-3 inline" /></span>
-                            )}
-                          </div>
-                        ) : null}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </SectionCard>
-          );
-        })}
-
-        <SectionCard color="rose" icon={MoonIcon}
-          title="Interventions" subtitle="Taux par type d'intervention — BBS, DO, DSI, DT">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          <div className="px-4 py-2 flex items-center gap-2 border-b bg-gray-50 text-gray-700 border-gray-200">
+            <span className="font-semibold text-sm">Tous les plafonds</span>
+            <span className="text-xs font-normal opacity-60">— {departments.length} départements</span>
+          </div>
           <table className="table table-sm table-zebra w-full">
             <thead>
               <tr>
                 <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Département</th>
-                {INTERV_TYPES.map(t => (
+                {ALL_TYPES.map(t => (
                   <th key={t.value} className="text-gray-500 font-medium text-xs uppercase tracking-wider">{t.label}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {ASTR_DEPARTMENTS.map((dept) => (
-                <tr key={dept}>
-                  <td className="font-medium text-gray-900">{dept}</td>
-                  {INTERV_TYPES.map((t) => <td key={t.value}>{renderCell(dept, t.value)}</td>)}
-                </tr>
-              ))}
+              {departments.map(dept => {
+                const canEditDept = user?.is_dg || user?.is_drh || dept === user?.department;
+                return (
+                  <tr key={dept} className={!canEditDept ? 'opacity-50' : 'hover'}>
+                    <td className="font-medium text-gray-900">{dept}</td>
+                    {ALL_TYPES.map(type => {
+                      const plafond = plafonds.find(p => p.department === dept && p.bonus_type === type.value);
+                      const isEditing = editingCell?.department === dept && editingCell?.type === type.value;
+                      const key = `${dept}-${type.value}`;
+                      return (
+                        <td key={key}>
+                          {isEditing ? (
+                            <div className="flex items-center gap-1">
+                              <input type="number" value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                className="w-20 px-2 py-1 rounded border border-gray-300 text-sm text-center focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                                onKeyDown={(e) => { if (e.key === 'Enter') handleCellSave(dept, type.value); if (e.key === 'Escape') setEditingCell(null); }}
+                                autoFocus />
+                              <button onClick={() => handleCellSave(dept, type.value)} className="text-green-600 hover:text-green-800 text-sm font-bold">✓</button>
+                              <button onClick={() => setEditingCell(null)} className="text-gray-400 hover:text-gray-600 text-sm">✕</button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between gap-1 group">
+                              <span onClick={() => { if (canEditDept) openCellEdit(dept, type.value); }}
+                                className={`${canEditDept ? 'cursor-pointer hover:bg-violet-50 px-1.5 py-0.5 rounded' : ''} inline-block transition-colors`}>
+                                {plafond ? (
+                                  <span className="font-medium text-sm">{parseFloat(plafond.amount).toLocaleString('fr-FR')}</span>
+                                ) : (
+                                  <span className="text-gray-200 italic text-sm">—</span>
+                                )}
+                              </span>
+                              {plafond && canEditDept && (
+                                <button className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all" title="Supprimer" onClick={() => handleDelete(plafond.id)}>
+                                  <XCircleIcon className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-        </SectionCard>
+        </div>
 
         {(user?.is_dg || user?.is_drh) && (
-          <SectionCard color="violet" icon={MoonIcon}
-            title="Astreinte — Taux spéciaux" subtitle="Configurer un taux personnalisé par département">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-4 py-2 flex items-center gap-2 border-b bg-violet-50 text-violet-700 border-violet-200">
+              <MoonIcon className="w-4 h-4" />
+              <span className="font-semibold text-sm">Astreinte — Taux spéciaux</span>
+              <span className="text-xs font-normal opacity-60">— Configurer un taux personnalisé par employé</span>
+            </div>
             <table className="table table-sm table-zebra w-full">
               <thead>
                 <tr>
                   <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Département</th>
                   <th className="text-gray-500 font-medium text-xs uppercase tracking-wider">Employés avec taux spécial</th>
-                  <th className="w-32"></th>
+                  <th className="w-28"></th>
                 </tr>
               </thead>
               <tbody>
@@ -304,7 +244,7 @@ const PlafondsPage = () => {
                 })}
               </tbody>
             </table>
-          </SectionCard>
+          </div>
         )}
       </div>
 

@@ -1243,37 +1243,37 @@ export default function BonusForm() {
         </div>
       </div>
 
-        <div className="card-blueline p-4 mb-0">
-          <div className="flex flex-col gap-2">
+        <div className="card-blueline p-3 mb-0">
+          <div className="flex flex-col gap-1.5">
             <p className="text-base-content/50 text-xs">Note de calcul : Total = total valeur quantitative + total valeur qualitative</p>
             <p className="text-[10px] text-base-content/40">Période : {params.startDate} → {params.endDate}</p>
 
-            <div className="flex items-center gap-4 mb-2">
+            <div className="flex items-center gap-3">
               <div className="flex-1">
-                <div className="flex justify-between text-xs text-base-content/50 mb-1">
+                <div className="flex justify-between text-[11px] text-base-content/50">
                   <span>Quantitatif</span>
                   <span>{totalQuantiEval.toFixed(1)}%</span>
                 </div>
-                <div className="w-full h-2 bg-base-200 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-base-200 rounded-full overflow-hidden mt-0.5">
                   <div className="h-full rounded-full transition-all duration-300 bg-blue-500"
                     style={{ width: `${Math.min(totalQuantiEval, 100)}%` }} />
                 </div>
               </div>
               <div className="flex-1">
-                <div className="flex justify-between text-xs text-base-content/50 mb-1">
+                <div className="flex justify-between text-[11px] text-base-content/50">
                   <span>Qualitatif</span>
                   <span>{totalQualiEval.toFixed(1)}%</span>
                 </div>
-                <div className="w-full h-2 bg-base-200 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-base-200 rounded-full overflow-hidden mt-0.5">
                   <div className="h-full rounded-full transition-all duration-300 bg-violet-500"
                     style={{ width: `${Math.min(totalQualiEval, 100)}%` }} />
                 </div>
               </div>
             </div>
 
-            <div className="text-right pt-2 border-t border-base-200">
-              <p className="text-sm text-base-content/60">Total (quanti + quali)</p>
-              <p className="text-2xl font-bold text-brand-600">
+            <div className="text-right pt-1 border-t border-base-200">
+              <p className="text-xs text-base-content/60">Total (quanti + quali)</p>
+              <p className="text-xl font-bold text-brand-600">
                 {totalEvalPct.toFixed(1)}% — {totalValue.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} / {params.maxPrime.toLocaleString('fr-FR')} Ar
               </p>
             </div>
@@ -1281,19 +1281,19 @@ export default function BonusForm() {
 
         </div>
 
-        <div className="card-blueline p-4 border-l-4 border-l-blue-500 bg-blue-50/40">
-          <div className="space-y-3">
+        <div className="card-blueline p-3 border-l-4 border-l-blue-500 bg-blue-50/40">
+          <div className="space-y-2">
             <div>
-              <label className="block text-base font-bold text-gray-900 mb-2">Appliquer ce modèle à :</label>
+              <label className="block text-sm font-bold text-gray-900 mb-1">Appliquer ce modèle à :</label>
               {!selectedEmp ? (
                 <p className="text-xs text-base-content/40">Sélectionnez d'abord un employé.</p>
               ) : sameDeptEmployees.length === 0 ? (
                 <p className="text-xs text-base-content/40">Aucun autre employé dans le même département.</p>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {sameDeptEmployees.map(e => (
                     <button key={e.id} type="button" onClick={() => toggleTeamMember(e.id)}
-                      className={`px-3 py-1.5 rounded-lg border text-sm transition-all ${
+                      className={`px-2.5 py-1 rounded-lg border text-xs transition-all ${
                         teamSelections.includes(e.id)
                           ? 'bg-brand-600 text-white border-brand-600'
                           : 'bg-white text-base-content/70 border-base-300 hover:border-brand-300'
@@ -1308,18 +1308,19 @@ export default function BonusForm() {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-base-content/70 mb-1">Observations générales</label>
-              <textarea value={observation} onChange={(e) => setObservation(e.target.value)} rows={3}
-                className="w-full px-3 py-2 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 resize-none"
+              <label className="block text-xs font-medium text-base-content/70 mb-0.5">Observations générales</label>
+              <textarea value={observation} onChange={(e) => setObservation(e.target.value)} rows={2}
+                className="w-full px-3 py-1.5 rounded-lg border border-base-300 focus:outline-none focus:ring-2 focus:ring-brand-500/30 focus:border-brand-500 resize-none text-sm"
                 placeholder="Ajouter des notes ou observations..." />
             </div>
-            <div className="flex gap-3 justify-end">
-              <Link to="/bonuses/new" className="btn btn-ghost">Annuler</Link>
-              <button type="submit" disabled={loading} className="btn bg-brand-600 hover:bg-brand-700 text-white border-0">
-                {loading ? <span className="loading loading-spinner" /> : 'Valider/Suivant'}
-              </button>
-            </div>
           </div>
+        </div>
+
+        <div className="flex gap-3 justify-end">
+          <Link to="/bonuses/new" className="btn btn-ghost">Annuler</Link>
+          <button type="submit" disabled={loading} className="btn bg-brand-600 hover:bg-brand-700 text-white border-0">
+            {loading ? <span className="loading loading-spinner" /> : 'Valider/Suivant'}
+          </button>
         </div>
       </form>
     </div>

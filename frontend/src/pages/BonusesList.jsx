@@ -389,8 +389,8 @@ const [filterMonth, setFilterMonth] = useState('');
           <option value="">Année</option>
           {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
         </select>
-        {(typeFilter || statusFilter || searchQuery || filterMonth || filterYear) && (
-          <button onClick={() => { setTypeFilter(''); setStatusFilter(''); setSearchQuery(''); setFilterMonth(''); setFilterYear(''); }}
+        {(typeFilter || statusFilter || searchQuery || depFilter || filterMonth || filterYear) && (
+          <button onClick={() => { setTypeFilter(''); setStatusFilter(''); setSearchQuery(''); setDepFilter(''); setFilterMonth(''); setFilterYear(''); }}
             className="px-3 py-1.5 rounded-lg text-sm text-gray-500 hover:text-gray-700 hover:bg-gray-100">
             Réinitialiser
           </button>
@@ -412,8 +412,8 @@ const [filterMonth, setFilterMonth] = useState('');
           <DownloadIcon className="w-10 h-10 mx-auto mb-3 text-gray-300" />
           <p className="font-medium text-gray-500">Aucune prime trouvée</p>
           <p className="text-sm text-gray-400 mt-1">Aucune prime ne correspond aux filtres appliqués</p>
-          {(typeFilter || statusFilter || searchQuery || filterMonth || filterYear) && (
-            <button onClick={() => { setTypeFilter(''); setStatusFilter(''); setSearchQuery(''); setFilterMonth(''); setFilterYear(''); }}
+          {(typeFilter || statusFilter || searchQuery || depFilter || filterMonth || filterYear) && (
+            <button onClick={() => { setTypeFilter(''); setStatusFilter(''); setSearchQuery(''); setDepFilter(''); setFilterMonth(''); setFilterYear(''); }}
               className="btn btn-sm btn-ghost mt-4 text-blue-600">
               Réinitialiser les filtres
             </button>
@@ -445,7 +445,7 @@ const [filterMonth, setFilterMonth] = useState('');
                     const allIds = items.filter(b => b.status === 'Prime validée').map(b => b.id);
                     setPayConfirm({ type: 'batch', ids: allIds, count: allIds.length });
                   }}
-                    className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/30 text-emerald-100 hover:bg-emerald-500/50 transition-colors">
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-sm">
                     Marquer tout payé
                   </button>
                 </div>

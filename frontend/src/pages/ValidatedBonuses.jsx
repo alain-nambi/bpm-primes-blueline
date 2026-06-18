@@ -1,29 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getBonuses } from '../services/api';
-import { ArrowLeftIcon, CalendarIcon, MoonIcon, ChartIcon } from '../components/Icons';
-
-const formatDate = (d) => new Date(d).toLocaleDateString('fr-FR', {
-  day: '2-digit', month: 'short', year: 'numeric',
-});
-
-const typeIcon = (t) => {
-  if (t === 'mensuel') return CalendarIcon;
-  if (t === 'astreinte') return MoonIcon;
-  if (t === 'commission') return ChartIcon;
-  return CalendarIcon;
-};
-
-const typeBadge = (t) => {
-  const map = {
-    mensuel: 'bg-blue-100 text-blue-700',
-    astreinte: 'bg-violet-100 text-violet-700',
-    commission: 'bg-amber-100 text-amber-700',
-  };
-  return map[t] || 'bg-gray-100 text-gray-700';
-};
-
-const typeLetter = (t) => t === 'mensuel' ? 'M' : t === 'astreinte' ? 'A' : 'C';
+import { ArrowLeftIcon } from '../components/Icons';
 
 const ValidatedBonuses = () => {
   const [bonuses, setBonuses] = useState([]);
@@ -74,26 +52,20 @@ const ValidatedBonuses = () => {
                 <span className="text-sm font-semibold text-gray-700">{monthName}</span>
                 <span className="text-xs font-medium text-gray-400 bg-white px-2 py-0.5 rounded-full">{items.length}</span>
               </div>
-              <div className="flex-1 p-3 space-y-2">
-                {items.map(b => {
-                  const Icon = typeIcon(b.bonus_type);
-                  return (
-                    <Link key={b.id} to={`/bonuses/${b.id}`}
-                      className="block bg-white rounded-lg border border-gray-200 p-3 hover:border-emerald-300 hover:shadow-sm transition-all">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className={`w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold ${typeBadge(b.bonus_type)}`}>
-                          {typeLetter(b.bonus_type)}
-                        </span>
-                        <span className="text-xs font-medium text-gray-900 truncate">{b.employee?.name || 'N/A'}</span>
-                      </div>
-                      <p className="text-[11px] text-gray-400">{formatDate(b.start_date)} → {formatDate(b.end_date)}</p>
-                      <div className="flex items-center justify-between mt-2">
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Prime validée</span>
-                        <span className="text-xs font-semibold text-blue-600">{b.total_amount.toLocaleString('fr-FR')} Ar</span>
-                      </div>
-                    </Link>
-                  );
-                })}
+              <div className="flex-1 p-2 space-y-1">
+                {items.map(b => (
+                  <Link key={b.id} to={`/bonuses/${b.id}`}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white hover:border-emerald-300 hover:shadow-sm transition-all group">
+                    <span className="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-[10px] font-bold">
+                      {b.bonus_type === 'mensuel' ? 'M' : b.bonus_type === 'astreinte' ? 'A' : 'C'}
+                    </span>
+                    <span className="text-[11px] text-gray-900 truncate min-w-0 flex-1">
+                      <span className="font-medium">{b.employee?.name || 'N/A'}</span>
+                    </span>
+                    <span className="text-[9px] font-medium px-1.5 py-0.5 rounded-full shrink-0 bg-emerald-100 text-emerald-700">Validée</span>
+                    <span className="text-[10px] font-semibold text-blue-600 shrink-0">{b.total_amount.toLocaleString('fr-FR')} Ar</span>
+                  </Link>
+                ))}
               </div>
             </div>
           ))}

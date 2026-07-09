@@ -12,3 +12,4 @@ python-jose
 passlib
 bcrypt
 openpyxl
+ldap3
